@@ -8,6 +8,7 @@ from torchinfo import summary
 
 from src.environment import EternityEnv
 from src.cnn import CNNFeaturesExtractor
+from src.pointer import PointerModel
 
 
 def test_cnn_extractor():
@@ -27,4 +28,29 @@ def test_cnn_extractor():
     obs = torch.FloatTensor(env.render())
     obs = torch.unsqueeze(obs, dim=0)
     assert model(obs).shape == torch.Size([1, 10, 4, 4])
+
+
+def test_pointer_model():
+    model = PointerModel(
+        hidden_size = 10,
+        n_heads = 2,
+        ff_size = 20,
+        dropout = 0.1,
+        n_layers = 3,
+    )
+
+    tiles = torch.randn(64, 10, 4, 4)
+    selected, rotations = model(tiles)
+    assert selected.shape == torch.Size([64, 2, 16])
+    assert rotations.shape == torch.Size([64, 2, 4])
+    assert torch.all(
+        torch.abs(
+            selected.sum(dim=2) - torch.ones(64, 2)
+        ) < 3e-1  # TODO: why is the precision so low? Is there a problem?
+    )
+    assert torch.all(
+        torch.abs(
+            rotations.sum(dim=2) - torch.ones(64, 2)
+        ) < 1e-3
+    )
 

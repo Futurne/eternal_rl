@@ -14,7 +14,7 @@ class CNNFeaturesExtractor(nn.Module):
             n_layers: int,
         ):
         super().__init__()
-        n_sides, n_class, map_size, _ = observation_space.shape
+        n_sides, n_class, *_ = observation_space.shape
 
         self.embed_classes = nn.Sequential(
             Rearrange('b s c s1 s2 -> (b s1 s2) (s c)'),  # Do batch linear inference on each token
