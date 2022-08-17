@@ -7,7 +7,6 @@ import gym
 from gym import spaces
 
 from src.draw import display_solution
-# from draw import display_solution
 
 
 NORTH = 0
@@ -19,6 +18,8 @@ ORIGIN_NORTH = 0
 ORIGIN_SOUTH = 1
 ORIGIN_WEST = 2
 ORIGIN_EAST = 3
+
+WALL_ID = 0
 
 
 class EternityEnv(gym.Env):
@@ -162,9 +163,9 @@ class EternityEnv(gym.Env):
         tile_sides = [NORTH, EAST, SOUTH, WEST]
         other_sides = [SOUTH, WEST, NORTH, EAST]
         other_coords = [
-            (coords[0] - 1, coords[1]),
+            (coords[0] + 1, coords[1]),  # (y, x)
             (coords[0], coords[1] + 1),
-            (coords[0] + 1, coords[1]),
+            (coords[0] - 1, coords[1]),
             (coords[0], coords[1] - 1)
         ]
 
@@ -176,7 +177,7 @@ class EternityEnv(gym.Env):
             tile_class = tile[side_t]
             other_class = self.instance[side_o, :, coords_o[0], coords_o[1]]
 
-            if tile_class[0] != 1:  # Ignore the class 0 (the walls)
+            if tile_class[WALL_ID] != 1:  # Ignore the walls
                 matchs += int(np.all(tile_class == other_class))  # Add one if the one-hots are the same
 
         return matchs
@@ -239,7 +240,8 @@ def read_instance_file(instance_path: str) -> np.ndarray:
     Output
     ------
         data: Matrix containing each tile.
-            Shape of [4, square_size, square_size].
+            Shape of [4, y-axis, x-axis].
+            Origin is in the bottom left corner.
     """
     with open(instance_path, 'r') as instance_file:
         instance_file = iter(instance_file)

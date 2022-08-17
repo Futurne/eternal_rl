@@ -1,0 +1,3 @@
+subject/
+**/__pycache__/
+*.swap
