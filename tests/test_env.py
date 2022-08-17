@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import pytest
 import numpy as np
 
 from src.environment import EternityEnv, read_instance_file, to_one_hot
@@ -93,9 +94,47 @@ def test_one_hot():
 
 
 def test_matchs_tiles():
-    env = EternityEnv('instances/eternity_A.txt', 0, 'mlp')
-    env.render('human')
+    env = EternityEnv('instances/eternity_A.txt', 0)
     assert env.count_matchs() == 12
     assert env.count_tile_matchs((0, 0)) == 1
     assert env.count_tile_matchs((1, 2)) == 3
+
+
+def test_swap_tiles():
+    env = EternityEnv('instances/eternity_A.txt', 0)
+
+    coords_1, coords_2 = (0, 0), (3, 2)
+    tile_1 = env.instance[:, :, coords_1[0], coords_1[1]].copy()
+    tile_2 = env.instance[:, :, coords_2[0], coords_2[1]].copy()
+    env.swap_tiles(coords_1, coords_2)
+
+    assert np.all(tile_1 == env.instance[:, :, coords_2[0], coords_2[1]])
+    assert np.all(tile_2 == env.instance[:, :, coords_1[0], coords_1[1]])
+
+
+@pytest.mark.parametrize(
+    'coords, roll_value',
+    [
+        (
+            (0, 0),
+            1
+        ),
+        (
+            (3, 2),
+            -1
+        ),
+        (
+            (1, 1),
+            10
+        )
+    ]
+)
+def test_roll_tiles(coords: tuple[int, int], roll_value: int):
+    env = EternityEnv('instances/eternity_A.txt', 0)
+    tile = env.instance[:, :, coords[0], coords[1]].argmax(axis=1)
+
+    env.roll_tile(coords, roll_value)
+    assert np.all(
+        env.instance[:, :, coords[0], coords[1]].argmax(axis=1) == np.roll(tile, roll_value)
+    )
 

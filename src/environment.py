@@ -25,7 +25,7 @@ WALL_ID = 0
 class EternityEnv(gym.Env):
     metadata = {'render.modes': ['human', 'computer']}
 
-    def __init__(self, instance_path: str, max_steps: int, model_type: str):
+    def __init__(self, instance_path: str, max_steps: int):
         super().__init__()
 
         instance = read_instance_file(instance_path)
@@ -292,18 +292,3 @@ if __name__ == '__main__':
     check_env(env)
     print('Stable-baselines3 compatibility checked')
 
-    size = env.size
-    n_pieces = env.n_pieces
-    n_class = env.n_class
-
-    assert size == 4
-    assert n_pieces == 16
-    assert n_class == 13
-    print('Environment consts checked')
-
-    obs = env.reset()
-    inst = env.instance
-    assert np.all( inst.sum(axis=(1)) == np.ones((4, size, size)) )
-    print('Environment step and observation checked')
-
-    env.render('human')
