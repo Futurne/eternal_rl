@@ -32,7 +32,6 @@ class EternityEnv(gym.Env):
         self.instance = to_one_hot(instance)  # Shape is [4, n_class, size, size]
 
         self.max_steps = max_steps
-        self.model_type = model_type
         self.size = self.instance.shape[-1]
         self.n_class = self.instance.shape[1]
         self.n_pieces = self.size * self.size
@@ -54,6 +53,11 @@ class EternityEnv(gym.Env):
 
     def step(self, action: np.ndarray) -> tuple[np.ndarray, int, bool, dict]:
         """Swap the two choosen tiles and orient them in the best possible way.
+
+        Input
+        -----
+            action: Id of the tiles to swap and their rolling shift values.
+                In the form of [tile_1_id, tile_2_id, roll_1, roll_2].
 
         Output
         ------
@@ -136,10 +140,13 @@ class EternityEnv(gym.Env):
 
         return self.render()
 
-    def render(self, mode='computer') -> np.ndarray:
+    def render(self, mode: str='computer') -> np.ndarray:
         """Transform the instance into an observation.
+
+        The observation is a one-hot map of shape [4, n_class, size, size].
         """
         if mode == 'computer':
+            """
             if self.model_type == 'mlp':
                 return self.instance.flatten()
             elif self.model_type == 'cnn':
@@ -149,10 +156,12 @@ class EternityEnv(gym.Env):
                 observation = self.instance.argmax(axis=1)
                 observation = np.transpose(observation, axes=[1, 2, 0])
                 return observation  # Shape is [size, size, 4].
-
+            """
+            return self.instance
         elif mode == 'human':
             solution = self.instance.argmax(axis=1)
             display_solution(solution)
+            return self.instance
 
     def count_tile_matchs(self, coords: tuple[int, int]) -> int:
         """Count the matchs a tile has with its neighbours.

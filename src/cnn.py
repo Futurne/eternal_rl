@@ -1,26 +1,29 @@
 import gym
+import einops
+from einops.layers.torch import Rearrange
 
 import torch
 import torch.nn as nn
 
-from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
-
-class CNNFeaturesExtractor(BaseFeaturesExtractor):
+class CNNFeaturesExtractor(nn.Module):
     def __init__(
             self,
             observation_space: gym.spaces.Box,
-            hidden_dim: int,
             n_channels: int,
             n_layers: int,
         ):
-        super(CNNFeaturesExtractor, self).__init__(observation_space, hidden_dim)
+        super().__init__()
+        n_sides, n_class, map_size, _ = observation_space.shape
 
-        in_channels = observation_space.shape[0]
-        self.project = nn.Sequential(
-            nn.Conv2d(in_channels, n_channels, 3, 1, padding='same'),
-            nn.ReLU(),
+        self.embed_classes = nn.Sequential(
+            Rearrange('b s c s1 s2 -> (b s1 s2) (s c)'),  # Do batch linear inference on each token
+
+            nn.Linear(n_sides * n_class, n_channels),
+            nn.LayerNorm(n_channels),
+            nn.LeakyReLU(),
         )
+
         self.cnn = nn.ModuleList([
             nn.Sequential(
                 nn.Conv2d(n_channels, n_channels, 3, 1, padding='same'),
@@ -30,47 +33,25 @@ class CNNFeaturesExtractor(BaseFeaturesExtractor):
             for _ in range(n_layers)
         ])
 
-        with torch.no_grad():
-            obs = torch.as_tensor(observation_space.sample()[None]).float()
-            emb = self.project(obs)
-            for layer in self.cnn:
-                emb = layer(emb)
-            flat_dim = emb.flatten().shape[-1]
-
-        self.flatten = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(flat_dim, hidden_dim),
-            nn.ReLU(),
-        )
-
     def forward(self, observations: torch.FloatTensor) -> torch.FloatTensor:
-        embeddings = self.project(observations)
+        """Embed each tokens in a more meaningful way.
+
+        Input
+        -----
+            observations: One-hot rendering of the map.
+                Shape of [batch_size, 4, n_class, map_size, map_size].
+
+        Output
+        ------
+            features: Extracted features of each token.
+                Shape of [batch_size, n_channels, map_size, map_size].
+        """
+        b_size, m_size = observations.shape[0], observations.shape[-1]
+
+        x = self.embed_classes(observations)
+        x = einops.rearrange(x, '(b s1 s2) c -> b c s1 s2', b=b_size, s2=m_size)  # Go back to CNN-like shape
         for layer in self.cnn:
-            embeddings = layer(embeddings) + embeddings
+            x = layer(x) + x
 
-        return self.flatten(embeddings)
-
-
-if __name__ == '__main__':
-    import numpy as np
-    from torchinfo import summary
-
-    observation_space = gym.spaces.Box(
-        low=0,
-        high=1,
-        shape=[4 * 13, 4, 4],
-        dtype=np.uint8
-    )
-    model = CNNFeaturesExtractor(
-        observation_space,
-        hidden_dim=128,
-        n_channels=16,
-        n_layers=3
-    )
-
-    summary(
-        model,
-        input_size=[(64, 4 * 13, 4, 4),],
-        device='cpu',
-    )
+        return x
 
