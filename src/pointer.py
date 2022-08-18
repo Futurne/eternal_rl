@@ -43,8 +43,8 @@ class PointerModel(nn.Module):
         self.decoder = nn.TransformerDecoder(decoder_layer, n_layers)
         self.mha = nn.MultiheadAttention(
             hidden_size,
-            1,
-            dropout,
+            n_heads,
+            dropout = 0,  # 0% otherwise the attention will not sum up to 1
             batch_first = True,
         )
         self.rotate_token = nn.Sequential(

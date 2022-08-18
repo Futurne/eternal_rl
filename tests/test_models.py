@@ -46,7 +46,7 @@ def test_pointer_model():
     assert torch.all(
         torch.abs(
             selected.sum(dim=2) - torch.ones(64, 2)
-        ) < 3e-1  # TODO: why is the precision so low? Is there a problem?
+        ) < 1e-3
     )
     assert torch.all(
         torch.abs(
