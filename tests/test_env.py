@@ -3,6 +3,7 @@
 
 import pytest
 import numpy as np
+from stable_baselines3.common.env_checker import check_env
 
 from src.environment import EternityEnv, read_instance_file, to_one_hot
 
@@ -137,4 +138,10 @@ def test_roll_tiles(coords: tuple[int, int], roll_value: int):
     assert np.all(
         env.instance[:, :, coords[0], coords[1]].argmax(axis=1) == np.roll(tile, roll_value)
     )
+
+
+@pytest.mark.filterwarnings('ignore:Your observation  has an unconventional shape')
+def test_check_sb3_env():
+    env = EternityEnv('instances/eternity_A.txt', 0)
+    check_env(env)
 

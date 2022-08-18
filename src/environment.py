@@ -1,9 +1,7 @@
 from itertools import product
 
-import numpy as np
-from stable_baselines3.common.env_checker import check_env
-
 import gym
+import numpy as np
 from gym import spaces
 
 from src.draw import display_solution
@@ -294,10 +292,4 @@ def to_one_hot(data: np.ndarray) -> np.ndarray:
         one_hot_data[side_id, class_id, y, x] = 1
 
     return one_hot_data
-
-
-if __name__ == '__main__':
-    env = EternityEnv('../instances/eternity_A.txt', 100)
-    check_env(env)
-    print('Stable-baselines3 compatibility checked')
 

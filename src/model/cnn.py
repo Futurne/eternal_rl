@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import gym
 import einops
 from einops.layers.torch import Rearrange

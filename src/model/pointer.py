@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 import einops
 from positional_encodings.torch_encodings import PositionalEncoding2D
 
