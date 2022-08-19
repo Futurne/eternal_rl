@@ -106,7 +106,7 @@ class TransformerFeaturesExtractor(nn.Module):
     def forward(
         self,
         tiles: torch.FloatTensor,
-    ) -> tuple[torch.FloatTensor, torch.FloatTensor]:
+    ) -> torch.FloatTensor:
         """Embed the tiles based on themselves.
         Compute two token embeddings based on the tiles embeddings and on themselves.
 
@@ -121,9 +121,6 @@ class TransformerFeaturesExtractor(nn.Module):
                 Shape of [batch_size, map_size * map_size, hidden_size].
             y: The two decoder token embeddings after the transformer decoder module.
                 Shape of [batch_size, 2, hidden_size].
-
-        The output is doubled because it returns both the latent representation for the
-        actor and the critic network.
         """
         batch_size = tiles.shape[0]
 
@@ -137,7 +134,61 @@ class TransformerFeaturesExtractor(nn.Module):
         y = einops.repeat(self.decoder_toks, 's h -> b s h', b=batch_size)
         y = self.decoder(y, x)
 
-        return ((x, y), (x, y))
+        return x, y
+
+
+
+class FeaturesExtractorModel(nn.Module):
+    def __init__(
+            self,
+            observation_space: gym.spaces.Box,
+            hidden_size: int,
+            cnn_layers: int,
+            n_heads: int,
+            ff_size: int,
+            dropout: float,
+            n_layers: int,
+    ):
+        super().__init__()
+
+        self.cnn = CNNFeaturesExtractor(
+            observation_space,
+            hidden_size,
+            cnn_layers,
+        )
+
+        self.encoder = TransformerFeaturesExtractor(
+            hidden_size,
+            n_heads,
+            ff_size,
+            dropout,
+            n_layers,
+        )
+
+    def forward(
+        self,
+        tiles: torch.FloatTensor,
+    ) -> tuple[torch.FloatTensor, torch.FloatTensor]:
+        """Embed each tokens in a more meaningful way.
+
+        Input
+        -----
+            observations: One-hot rendering of the map.
+                Shape of [batch_size, 4, n_class, map_size, map_size].
+
+        Output
+        ------
+            x: Tiles embeddings after the transformer encoder module.
+                Shape of [batch_size, map_size * map_size, hidden_size].
+            y: The two decoder token embeddings after the transformer decoder module.
+                Shape of [batch_size, 2, hidden_size].
+
+        The output is doubled because it returns both the latent representation for the
+        actor and the critic network.
+        """
+        x = self.cnn(tiles)
+        features = self.encoder(x)
+        return features, features
 
     def forward_actor(self, tiles: torch.FloatTensor) -> torch.FloatTensor:
         return self.forward(tiles)[0]

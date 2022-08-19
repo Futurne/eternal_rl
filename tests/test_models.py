@@ -4,10 +4,9 @@
 import gym
 import torch
 import numpy as np
-from torchinfo import summary
 
 from src.environment import EternityEnv
-from src.model.extractor import CNNFeaturesExtractor, TransformerFeaturesExtractor
+from src.model.extractor import CNNFeaturesExtractor, TransformerFeaturesExtractor, FeaturesExtractorModel
 from src.model.actorcritic import PointerActorCritic
 
 
@@ -44,9 +43,38 @@ def test_transformer_extractor():
     )
 
     tiles = torch.randn(batch_size, hidden_size, map_size, map_size)
-    (x, y), _ = model(tiles)
+    x, y = model(tiles)
     assert x.shape == torch.Size([batch_size, map_size * map_size, hidden_size])
     assert y.shape == torch.Size([batch_size, 2, hidden_size])
+
+
+def test_features_extractor_model():
+    env = EternityEnv('instances/eternity_A.txt', 0)
+    hidden_size = 10
+    batch_size = 64
+    n_tiles = env.observation_space.shape[-1] * env.observation_space.shape[-2]
+
+    model = FeaturesExtractorModel(
+        env.observation_space,
+        hidden_size,
+        cnn_layers = 1,
+        n_heads = 2,
+        ff_size = 2 * hidden_size,
+        dropout = 0.1,
+        n_layers = 3
+    )
+
+    obs = torch.randn(
+        batch_size,
+        env.observation_space.shape[0],
+        env.observation_space.shape[1],
+        env.observation_space.shape[2],
+        env.observation_space.shape[3],
+    )
+
+    for x, y in model(obs):
+        assert x.shape == torch.Size([batch_size, n_tiles, hidden_size])
+        assert y.shape == torch.Size([batch_size, 2, hidden_size])
 
 
 def test_pointer_actor_critic():

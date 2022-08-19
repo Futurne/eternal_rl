@@ -144,19 +144,8 @@ class EternityEnv(gym.Env):
         The observation is a one-hot map of shape [4, n_class, size, size].
         """
         if mode == 'computer':
-            """
-            if self.model_type == 'mlp':
-                return self.instance.flatten()
-            elif self.model_type == 'cnn':
-                observation = self.instance.reshape((4 * self.n_class, self.size, self.size))
-                return observation
-            elif self.model_type == 'transformer':
-                observation = self.instance.argmax(axis=1)
-                observation = np.transpose(observation, axes=[1, 2, 0])
-                return observation  # Shape is [size, size, 4].
-            """
             return self.instance
-        elif mode == 'human':
+        if mode == 'human':
             solution = self.instance.argmax(axis=1)
             display_solution(solution)
             return self.instance

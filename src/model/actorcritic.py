@@ -5,16 +5,13 @@ import gym
 import einops
 from stable_baselines3.common.policies import ActorCriticPolicy
 from stable_baselines3.common.type_aliases import Schedule
-from stable_baselines3.common.distributions import (
-    Distribution,
-    MultiCategoricalDistribution,
-)
+from stable_baselines3.common.distributions import Distribution
 
 import torch
 import torch.nn as nn
 from torch.distributions import Categorical
 
-from src.model.extractor import CNNFeaturesExtractor, TransformerFeaturesExtractor
+from src.model.extractor import FeaturesExtractorModel
 
 
 class PointerActorCritic(ActorCriticPolicy):
@@ -28,12 +25,12 @@ class PointerActorCritic(ActorCriticPolicy):
         observation_space: gym.spaces.Space,
         action_space: gym.spaces.Space,
         lr_schedule: callable,
-        hidden_size: int,
-        cnn_layers: int,
-        n_heads: int,
-        ff_size: int,
-        dropout: float,
-        n_layers: int,
+        hidden_size: int = 10,
+        cnn_layers: int = 1,
+        n_heads: int = 2,
+        ff_size: int = 20,
+        dropout: float = 0.1,
+        n_layers: int = 3,
         *args,
         **kwargs,
     ):
@@ -56,26 +53,21 @@ class PointerActorCritic(ActorCriticPolicy):
         )
 
     def _build_mlp_extractor(self):
-        self.mlp_extractor = nn.Sequential(
-            self.cnn,
-            self.encoder,
-        )
-
-    def _build(self, lr_schedule: Schedule):
-        """Create the networks and the optimizer.
-        """
-        self.cnn = CNNFeaturesExtractor(
+        self.mlp_extractor = FeaturesExtractorModel(
             self.observation_space,
             self.hidden_size,
             self.cnn_layers,
-        )
-        self.encoder = TransformerFeaturesExtractor(
-            self.hidden_size,
             self.n_heads,
             self.ff_size,
             self.dropout,
             self.n_layers,
         )
+
+    def _build(self, lr_schedule: Schedule):
+        """Create the networks and the optimizer.
+        """
+        self._build_mlp_extractor()
+
         self.mha = nn.MultiheadAttention(
             self.hidden_size,
             self.n_heads,
@@ -88,7 +80,6 @@ class PointerActorCritic(ActorCriticPolicy):
         )
         self.value = nn.Linear(2 * self.hidden_size, 1)
 
-        self._build_mlp_extractor()
 
         self.optimizer = self.optimizer_class(self.parameters(), lr=lr_schedule(1), **self.optimizer_kwargs)
 
@@ -171,8 +162,9 @@ class PointerActorCritic(ActorCriticPolicy):
         ]
         return self.action_dist
 
-    def extract_features(self, observations: torch.FloatTensor) -> torch.FloatTensor:
+    def extract_features(self, observations: torch.ByteTensor) -> torch.FloatTensor:
         """Overwrite the `extract_features` method.
+        Cast the observations to a FloatTensor.
         """
-        return observations
+        return observations.float()
 
