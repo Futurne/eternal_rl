@@ -9,7 +9,6 @@ from torchinfo import summary
 from src.environment import EternityEnv
 from src.model.extractor import CNNFeaturesExtractor, TransformerFeaturesExtractor
 from src.model.actorcritic import PointerActorCritic
-from src.model.pointer import PointerModel
 
 
 def test_cnn_extractor():
