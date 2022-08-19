@@ -2,20 +2,19 @@
 # -*- coding: utf-8 -*-
 
 import gym
+import einops
 from stable_baselines3.common.policies import ActorCriticPolicy
+from stable_baselines3.common.type_aliases import Schedule
+from stable_baselines3.common.distributions import (
+    Distribution,
+    MultiCategoricalDistribution,
+)
+
+import torch
+import torch.nn as nn
+from torch.distributions import Categorical
 
 from src.model.extractor import CNNFeaturesExtractor, TransformerFeaturesExtractor
-
-
-class PointerModel(nn.Module):
-    def __init__(
-        self,
-        hidden_size: int,
-        n_heads: int,
-        n_rolls: int,
-    ):
-        super().__init__()
-
 
 
 class PointerActorCritic(ActorCriticPolicy):
@@ -28,6 +27,7 @@ class PointerActorCritic(ActorCriticPolicy):
         self,
         observation_space: gym.spaces.Space,
         action_space: gym.spaces.Space,
+        lr_schedule: callable,
         hidden_size: int,
         cnn_layers: int,
         n_heads: int,
@@ -37,40 +37,60 @@ class PointerActorCritic(ActorCriticPolicy):
         *args,
         **kwargs,
     ):
+        self.observation_space = observation_space
+        self.action_space = action_space
+        self.hidden_size = hidden_size
+        self.cnn_layers = cnn_layers
+        self.n_heads = n_heads
+        self.ff_size = ff_size
+        self.dropout = dropout
+        self.n_layers = n_layers
+        self.n_rolls = observation_space.shape[0]
+
         super(PointerActorCritic, self).__init__(
             observation_space,
             action_space,
+            lr_schedule,
             *args,
             **kwargs,
         )
-
-        self.ortho_init = False
-
-        self.cnn = CNNFeaturesExtractor(
-            observation_space,
-            hidden_size,
-            cnn_layers,
-        )
-        self.encoder = TransformerFeaturesExtractor(
-            hidden_size,
-            n_heads,
-            ff_size,
-            dropout,
-            n_layers,
-        )
-        self.mha = nn.MultiheadAttention(
-            hidden_size,
-            n_heads,
-            dropout = 0,  # 0% otherwise the attention will not sum up to 1
-            batch_first = True,
-        )
-        self.value = nn.Linear(2 * hidden_size, 1)
 
     def _build_mlp_extractor(self):
         self.mlp_extractor = nn.Sequential(
             self.cnn,
             self.encoder,
         )
+
+    def _build(self, lr_schedule: Schedule):
+        """Create the networks and the optimizer.
+        """
+        self.cnn = CNNFeaturesExtractor(
+            self.observation_space,
+            self.hidden_size,
+            self.cnn_layers,
+        )
+        self.encoder = TransformerFeaturesExtractor(
+            self.hidden_size,
+            self.n_heads,
+            self.ff_size,
+            self.dropout,
+            self.n_layers,
+        )
+        self.mha = nn.MultiheadAttention(
+            self.hidden_size,
+            self.n_heads,
+            dropout = 0,  # 0% otherwise the attention will not sum up to 1
+            batch_first = True,
+        )
+        self.roll = nn.Sequential(
+            nn.Linear(self.hidden_size, self.n_rolls),
+            nn.Softmax(dim=2),
+        )
+        self.value = nn.Linear(2 * self.hidden_size, 1)
+
+        self._build_mlp_extractor()
+
+        self.optimizer = self.optimizer_class(self.parameters(), lr=lr_schedule(1), **self.optimizer_kwargs)
 
     def value_net(
             self,
@@ -99,13 +119,60 @@ class PointerActorCritic(ActorCriticPolicy):
             self,
             features: tuple[torch.FloatTensor, torch.FloatTensor],
     ) -> tuple[torch.FloatTensor, torch.FloatTensor]:
-        # TODO: do action prediction
-        pass
+        """Action network predicting the future action.
+
+        Input
+        -----
+            features: Tuple of (tiles_embeddings, decoder_tokens_embeddings).
+                tiles_embeddings: Features extracted from the tiles.
+                    Shape of [batch_size, n_tiles, hidden_size].
+                decoder_tokens_embeddings: Features extracted from the decoder based on the tiles.
+                    Shape of [batch_size, 2, hidden_size].
+
+        Output
+        ------
+            selected: The selected tiles to swap.
+                Shape of [batch_size, 2, n_tiles].
+            rolls: The rolls to apply to the selected tiles.
+                Shape of [batch_size, 2, n_rolls].
+        """
+        tiles, tokens = features
+        _, selected = self.mha(tokens, tiles, tiles, need_weights=True)
+        rolls = self.roll(tokens)
+        return selected, rolls
 
     def _get_action_dist_from_latent(
             self,
             features: tuple[torch.FloatTensor, torch.FloatTensor],
-    ) -> torch.FloatTensor:
-        # TODO: return distribution based on the prediction of actions
-        pass
+    ) -> Distribution:
+        """Action network predicting the future action.
+
+        Input
+        -----
+            features: Tuple of (tiles_embeddings, decoder_tokens_embeddings).
+                tiles_embeddings: Features extracted from the tiles.
+                    Shape of [batch_size, n_tiles, hidden_size].
+                decoder_tokens_embeddings: Features extracted from the decoder based on the tiles.
+                    Shape of [batch_size, 2, hidden_size].
+
+        Output
+        ------
+            action_dist: List of batched distribution of the actions.
+                The first two are the distributions of the selected tiles to swap.
+                The last two are the distributions of the rolls to apply to selected tiles.
+        """
+        selected, rolls = self.action_net(features)
+        self.action_dist.distribution = [
+            Categorical(probs=selected[:, i])
+            for i in range(selected.shape[1])
+        ] + [
+            Categorical(probs=rolls[:, i])
+            for i in range(rolls.shape[1])
+        ]
+        return self.action_dist
+
+    def extract_features(self, observations: torch.FloatTensor) -> torch.FloatTensor:
+        """Overwrite the `extract_features` method.
+        """
+        return observations
 
