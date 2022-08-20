@@ -3,6 +3,7 @@ max_steps: 100
 total_timesteps: 2.0e4
 seed: 0
 num_cpu: 4
+group: Test
 net_arch:
   hidden_size: 50
   cnn_layers: 1

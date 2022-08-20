@@ -1,3 +1,6 @@
 subject/
 **/__pycache__/
 *.swap
+models/
+wandb/
+runs/

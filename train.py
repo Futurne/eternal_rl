@@ -5,8 +5,7 @@ import yaml
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 
-from src.environment import EternityEnv
-from src.model.actorcritic import PointerActorCritic
+from src.train import TrainEternal
 
 
 def load_config_file(config_path: str) -> dict[str, any]:
@@ -17,23 +16,15 @@ def load_config_file(config_path: str) -> dict[str, any]:
     }  # Default config
     with open(config_path, 'r') as config_file:
         config |= yaml.safe_load(config_file)
+
+    # Preprocess values
+    config['total_timesteps'] = int(float(config['total_timesteps']))
+
     return config
-
-
-def train_agent(config: dict[str, any]):
-    env = EternityEnv(config['instance_path'], config['max_steps'], config['seed'])
-    # env = make_vec_env(env, n_envs=config['num_cpu'], seed=config['seed'],)
-    model = PPO(
-        PointerActorCritic,
-        env,
-        verbose = 1,
-        policy_kwargs = {
-            'net_arch': config['net_arch']
-        }
-    )
-    model.learn(int(float(config['total_timesteps'])))
 
 
 if __name__ == '__main__':
     config = load_config_file('config.yaml')
-    train_agent(config)
+    train = TrainEternal(config)
+    train.train()
+
