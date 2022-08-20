@@ -3,3 +3,10 @@ max_steps: 100
 total_timesteps: 2.0e4
 seed: 0
 num_cpu: 4
+net_arch:
+  hidden_size: 50
+  cnn_layers: 1
+  n_heads: 5
+  ff_size: 100
+  dropout: 0.1
+  n_layers: 3

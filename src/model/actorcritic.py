@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from typing import Optional
+
 import gym
 import einops
 from stable_baselines3.common.policies import ActorCriticPolicy
@@ -25,29 +27,43 @@ class PointerActorCritic(ActorCriticPolicy):
         observation_space: gym.spaces.Space,
         action_space: gym.spaces.Space,
         lr_schedule: callable,
-        hidden_size: int = 50,
-        cnn_layers: int = 1,
-        n_heads: int = 5,
-        ff_size: int = 100,
-        dropout: float = 0.1,
-        n_layers: int = 3,
+        net_arch: Optional[dict[str, any]] = None,
         *args,
         **kwargs,
     ):
         self.observation_space = observation_space
         self.action_space = action_space
-        self.hidden_size = hidden_size
-        self.cnn_layers = cnn_layers
-        self.n_heads = n_heads
-        self.ff_size = ff_size
-        self.dropout = dropout
-        self.n_layers = n_layers
-        self.n_rolls = observation_space.shape[0]
+
+        # Default args
+        self.net_arch = {
+            'hidden_size': 10,
+            'cnn_layers': 1,
+            'n_heads': 2,
+            'ff_size': 20,
+            'dropout': 0.1,
+            'n_layers': 3,
+        }
+        if net_arch:
+            self.net_arch |= net_arch
+
+        # Makes sure that all parameters are here
+        assert all(
+            param in self.net_arch
+            for param in [
+                'hidden_size',
+                'cnn_layers',
+                'n_heads',
+                'ff_size',
+                'dropout',
+                'n_layers',
+            ]
+        )
 
         super(PointerActorCritic, self).__init__(
             observation_space,
             action_space,
             lr_schedule,
+            net_arch = self.net_arch,  # Overwrite default net_arch
             *args,
             **kwargs,
         )
@@ -55,12 +71,12 @@ class PointerActorCritic(ActorCriticPolicy):
     def _build_mlp_extractor(self):
         self.mlp_extractor = FeaturesExtractorModel(
             self.observation_space,
-            self.hidden_size,
-            self.cnn_layers,
-            self.n_heads,
-            self.ff_size,
-            self.dropout,
-            self.n_layers,
+            self.net_arch['hidden_size'],
+            self.net_arch['cnn_layers'],
+            self.net_arch['n_heads'],
+            self.net_arch['ff_size'],
+            self.net_arch['dropout'],
+            self.net_arch['n_layers'],
         )
 
     def _build(self, lr_schedule: Schedule):
@@ -69,16 +85,16 @@ class PointerActorCritic(ActorCriticPolicy):
         self._build_mlp_extractor()
 
         self.mha = nn.MultiheadAttention(
-            self.hidden_size,
-            self.n_heads,
+            self.net_arch['hidden_size'],
+            self.net_arch['n_heads'],
             dropout = 0,  # 0% otherwise the attention will not sum up to 1
             batch_first = True,
         )
         self.roll = nn.Sequential(
-            nn.Linear(self.hidden_size, self.n_rolls),
+            nn.Linear(self.net_arch['hidden_size'], self.observation_space.shape[0]),
             nn.Softmax(dim=2),
         )
-        self.value = nn.Linear(2 * self.hidden_size, 1)
+        self.value = nn.Linear(2 * self.net_arch['hidden_size'], 1)
 
 
         self.optimizer = self.optimizer_class(self.parameters(), lr=lr_schedule(1), **self.optimizer_kwargs)

@@ -10,15 +10,27 @@ from src.model.actorcritic import PointerActorCritic
 
 
 def load_config_file(config_path: str) -> dict[str, any]:
+    config = {
+        'seed': 0,
+        'num_cpu': 4,
+        'net_arch': {},
+    }  # Default config
     with open(config_path, 'r') as config_file:
-        config = yaml.safe_load(config_file)
+        config |= yaml.safe_load(config_file)
     return config
 
 
 def train_agent(config: dict[str, any]):
     env = EternityEnv(config['instance_path'], config['max_steps'], config['seed'])
     # env = make_vec_env(env, n_envs=config['num_cpu'], seed=config['seed'],)
-    model = PPO(PointerActorCritic, env, verbose=1)
+    model = PPO(
+        PointerActorCritic,
+        env,
+        verbose = 1,
+        policy_kwargs = {
+            'net_arch': config['net_arch']
+        }
+    )
     model.learn(int(float(config['total_timesteps'])))
 
 
