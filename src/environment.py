@@ -22,7 +22,7 @@ WALL_ID = 0
 
 
 class EternityEnv(gym.Env):
-    metadata = {'render.modes': ['human', 'computer']}
+    metadata = {'render.modes': ['rgb_array', 'computer']}
 
     def __init__(self, instance_path: str, max_steps: int, seed: int = 0):
         super().__init__()
@@ -147,10 +147,9 @@ class EternityEnv(gym.Env):
         """
         if mode == 'computer':
             return self.instance
-        if mode == 'human':
+        if mode == 'rgb_array':
             solution = self.instance.argmax(axis=1)
-            display_solution(solution)
-            return self.instance
+            return display_solution(solution)
 
     def count_tile_matchs(self, coords: tuple[int, int]) -> int:
         """Count the matchs a tile has with its neighbours.

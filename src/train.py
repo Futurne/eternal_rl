@@ -4,7 +4,8 @@
 import wandb
 from wandb.integration.sb3 import WandbCallback
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import SubprocVecEnv
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecVideoRecorder
+from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import set_random_seed
 
 from src.environment import EternityEnv
@@ -21,20 +22,29 @@ class TrainEternal:
 
         See: https://stable-baselines3.readthedocs.io/en/master/guide/examples.html#multiprocessing-unleashing-the-power-of-vectorized-environments.
         """
-        _init = lambda seed: EternityEnv(self.instance_path, self.max_steps, seed)
+        _init = lambda seed: Monitor(EternityEnv(self.instance_path, self.max_steps, seed))
         env = SubprocVecEnv([lambda: _init(cpu_id + self.seed) for cpu_id in range(self.num_cpu)])
         return env
 
     def train(self):
-        env = self.make_env()
-
         with wandb.init(
             project = 'Eternal RL',
             entity = 'pierrotlc',
             config = self.__dict__,
             group = self.group,
             sync_tensorboard = True,  # Auto-upload the tensorboard metrics
+            # monitor_gym = True,  # Auto-upload the videos of the agent playing
         ) as run:
+            # Create env
+            env = self.make_env()
+            """
+            env = VecVideoRecorder(
+                env,
+                f'videos/{run.id}',
+                record_video_trigger = lambda x: x % 2000,
+            )
+            """
+
             # Create agent
             model = PPO(
                 PointerActorCritic,
@@ -48,8 +58,9 @@ class TrainEternal:
             model.learn(
                 self.total_timesteps,
                 callback = WandbCallback(
-                    model_save_path = f'models/{run.id}',
                     verbose = 2,
+                    # model_save_path = f'models/{run.id}',
+                    # model_save_freq = 100,
                 ),
             )
 

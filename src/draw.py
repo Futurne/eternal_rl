@@ -1,6 +1,8 @@
 import math
 import copy
+from typing import Optional
 
+import PIL
 import numpy as np
 
 import matplotlib
@@ -8,6 +10,7 @@ import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 from matplotlib.path import Path
 from matplotlib.lines import Line2D
+
 
 GRAY = 0
 BLACK = 23
@@ -29,18 +32,19 @@ def numpy_sol_to_list(solution: np.ndarray) -> list[tuple]:
 
 def display_solution(
         solution: np.ndarray,
-        output_file: str=None,
-    ):
+        output_file: Optional[str] = None,
+    ) -> Optional[np.ndarray]:
     """
     Input
     -----
         solution: Matrix containing the instance.
             Shape of [4, board_size, board_size].
         output_file: Optional file to save the figure in.
-    """
-    """
-    if len(solution) < self.n_piece:
-        solution = solution + [(WHITE, WHITE, WHITE, WHITE)] * (self.n_piece - len(solution))
+
+    Output
+    ------
+        rgb_array: Numpy array of the image.
+            Return only if no `output_file` has been given.
     """
     origin = 0
     board_size = solution.shape[-1]
@@ -53,6 +57,7 @@ def display_solution(
 
     # n_total_conflict = self.get_total_n_conflict(solution)
 
+    n_total_connection = 2 * board_size * (board_size - 1)
     n_internal_conflict = 0
 
     for j in range(size):  # y-axis
@@ -70,8 +75,6 @@ def display_solution(
                     )
                 )
             else:
-                # ax.add_patch(patches.Rectangle((i, j), i + 1, j + 1, fill=True, facecolor='white', edgecolor='k'))
-
                 left_bot = (i, j)
                 right_bot = (i + 1, j)
                 right_top = (i + 1, j + 1)
@@ -176,23 +179,23 @@ def display_solution(
     plt.xlim(origin, size)
     plt.ylim(origin, size)
 
-    """
-    title = 'Eternity of size %d X %d\n' \
-            'Total connections: %d    Internal connections: %d\n' \
-            'Total Valid connections: %d     Internal valid internal connections: %d\n' \
-            'Total Invalid connections: %d    Internal invalid connections: %d' % \
-            (board_size, board_size,
-             self.n_total_connection, self.n_internal_connection,
-             self.n_total_connection - n_total_conflict, self.n_internal_connection - n_internal_conflict,
-             n_total_conflict, n_internal_conflict,
-             )
+    title = f'Eternity of size {board_size} X {board_size}\n'
+    # title += f'Total connections: {n_total_connection}    Internal connections: {n_internal_connection}\n'
+    # title += f'Total Valid connections: {n_total_connection - n_total_conflict}     Internal valid internal connections: {n_internal_connection - n_internal_conflict}\n'
+    # title += f'Total Invalid connections: {n_total_conflict}    Internal invalid connections: {n_internal_conflict}'
     ax.set_title(title)
-    """
 
     if output_file is not None:
         plt.savefig(output_file)
     else:
-        plt.show()
+        fig = plt.figure()
+        fig.canvas.draw()
+        image = PIL.Image.frombytes(
+            'RGB',
+            fig.canvas.get_width_height(),
+            fig.canvas.tostring_rgb(),
+        )
+        return np.array(image)
 
 
 def build_color_dict():
