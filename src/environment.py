@@ -3,6 +3,7 @@ from itertools import product
 import gym
 import numpy as np
 from gym import spaces
+from numpy.random import default_rng
 
 from src.draw import display_solution
 
@@ -23,9 +24,10 @@ WALL_ID = 0
 class EternityEnv(gym.Env):
     metadata = {'render.modes': ['human', 'computer']}
 
-    def __init__(self, instance_path: str, max_steps: int):
+    def __init__(self, instance_path: str, max_steps: int, seed: int = 0):
         super().__init__()
 
+        self.rng = default_rng(seed)
         instance = read_instance_file(instance_path)
         self.instance = to_one_hot(instance)  # Shape is [4, n_class, size, size]
 
@@ -119,11 +121,11 @@ class EternityEnv(gym.Env):
         )  # Shape is [size * size, 4 * n_class]
 
         # Scramble the tiles
-        instance = np.random.permutation(instance)
+        instance = self.rng.permutation(instance)
 
         # Randomly orient the tiles
         for tile_id, tile in enumerate(instance):
-            shift_value = np.random.randint(low=0, high=4) * self.n_class
+            shift_value = self.rng.integers(low=0, high=4) * self.n_class
             instance[tile_id] = np.roll(tile, shift_value)
 
         instance = instance.reshape(self.size, self.size, 4, self.n_class)
@@ -228,6 +230,11 @@ class EternityEnv(gym.Env):
         tile = np.roll(tile.flatten(), shift_value)
         tile = tile.reshape(4, self.n_class)
         self.instance[:, :, coords[0], coords[1]] = tile
+
+    def seed(self, seed: int):
+        """Modify the seed.
+        """
+        self.rng = default_rng(seed)
 
 
 def read_instance_file(instance_path: str) -> np.ndarray:

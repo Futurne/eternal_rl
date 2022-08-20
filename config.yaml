@@ -1,0 +1,5 @@
+instance_path: instances/eternity_trivial_A.txt
+max_steps: 100
+total_timesteps: 2.0e4
+seed: 0
+num_cpu: 4
