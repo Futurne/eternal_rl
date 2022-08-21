@@ -95,14 +95,14 @@ def test_one_hot():
 
 
 def test_matchs_tiles():
-    env = EternityEnv('instances/eternity_A.txt', 0)
+    env = EternityEnv('instances/eternity_A.txt', 0, False)
     assert env.count_matchs() == 12
     assert env.count_tile_matchs((0, 0)) == 1
     assert env.count_tile_matchs((1, 2)) == 3
 
 
 def test_swap_tiles():
-    env = EternityEnv('instances/eternity_A.txt', 0)
+    env = EternityEnv('instances/eternity_A.txt', 0, manual_orient=True)
 
     coords_1, coords_2 = (0, 0), (3, 2)
     tile_1 = env.instance[:, :, coords_1[0], coords_1[1]].copy()
@@ -131,7 +131,7 @@ def test_swap_tiles():
     ]
 )
 def test_roll_tiles(coords: tuple[int, int], roll_value: int):
-    env = EternityEnv('instances/eternity_A.txt', 0)
+    env = EternityEnv('instances/eternity_A.txt', 0, manual_orient=True)
     tile = env.instance[:, :, coords[0], coords[1]].argmax(axis=1)
 
     env.roll_tile(coords, roll_value)
@@ -142,6 +142,9 @@ def test_roll_tiles(coords: tuple[int, int], roll_value: int):
 
 @pytest.mark.filterwarnings('ignore:Your observation  has an unconventional shape')
 def test_check_sb3_env():
-    env = EternityEnv('instances/eternity_A.txt', 0)
+    env = EternityEnv('instances/eternity_A.txt', 0, False)
+    check_env(env)
+
+    env = EternityEnv('instances/eternity_B.txt', 0, True)
     check_env(env)
 

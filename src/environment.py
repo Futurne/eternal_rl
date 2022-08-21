@@ -24,7 +24,13 @@ WALL_ID = 0
 class EternityEnv(gym.Env):
     metadata = {'render.modes': ['rgb_array', 'computer']}
 
-    def __init__(self, instance_path: str, max_steps: int, seed: int = 0):
+    def __init__(
+            self,
+            instance_path: str,
+            max_steps: int,
+            manual_orient: bool,
+            seed: int = 0,
+    ):
         super().__init__()
 
         self.rng = default_rng(seed)
@@ -38,12 +44,20 @@ class EternityEnv(gym.Env):
         self.matchs = 0
         self.best_matchs = 2 * self.size * (self.size - 1)
 
-        self.action_space = spaces.MultiDiscrete([
-            self.n_pieces,  # Tile id to swap
-            self.n_pieces,  # Tile id to swap
-            4,  # How much rolls for the first tile
-            4,  # How much rolls for the second tile
-        ])
+        self.manual_orient = manual_orient
+        if manual_orient:
+            self.action_space = spaces.MultiDiscrete([
+                self.n_pieces,  # Tile id to swap
+                self.n_pieces,  # Tile id to swap
+                4,  # How much rolls for the first tile
+                4,  # How much rolls for the second tile
+            ])
+        else:
+            self.action_space = spaces.MultiDiscrete([
+                self.n_pieces,  # Tile id to swap
+                self.n_pieces,  # Tile id to swap
+            ])
+
         self.observation_space = spaces.Box(
             low=0,
             high=1,
@@ -71,7 +85,8 @@ class EternityEnv(gym.Env):
             for a in action[:2]
         ]
 
-        rolls = [a for a in action[2:]]
+        if self.manual_orient:
+            rolls = [a for a in action[2:]]
 
         # Count matchs before swap
         previous_matchs = self.count_tile_matchs(coords[0])
@@ -81,8 +96,12 @@ class EternityEnv(gym.Env):
         self.swap_tiles(coords[0], coords[1])
 
         # Reorient the two tiles
-        self.roll_tile(coords[0], rolls[0])
-        self.roll_tile(coords[1], rolls[1])
+        if self.manual_orient:
+            self.roll_tile(coords[0], rolls[0])
+            self.roll_tile(coords[1], rolls[1])
+        else:
+            self.best_orientation(coords[0])
+            self.best_orientation(coords[1])
 
         # Count new matchs
         swapped_matchs = self.count_tile_matchs(coords[0])

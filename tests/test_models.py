@@ -22,7 +22,7 @@ def test_cnn_extractor():
         n_channels = 10,
         n_layers = 2,
     )
-    env = EternityEnv('instances/eternity_A.txt', 0)
+    env = EternityEnv('instances/eternity_A.txt', 0, True)
 
     obs = torch.FloatTensor(env.render())
     obs = torch.unsqueeze(obs, dim=0)
@@ -49,10 +49,10 @@ def test_transformer_extractor():
 
 
 def test_features_extractor_model():
-    env = EternityEnv('instances/eternity_A.txt', 0)
+    env = EternityEnv('instances/eternity_A.txt', 0, False)
     hidden_size = 10
     batch_size = 64
-    n_tiles = env.observation_space.shape[-1] * env.observation_space.shape[-2]
+    n_tiles = env.action_space.nvec[0]
 
     model = FeaturesExtractorModel(
         env.observation_space,
@@ -78,21 +78,24 @@ def test_features_extractor_model():
 
 
 def test_pointer_actor_critic():
-    env = EternityEnv('instances/eternity_A.txt', 0)
+    env = EternityEnv('instances/eternity_A.txt', 0, True)
     hidden_size = 10
     batch_size = 64
-    n_tiles = env.observation_space.shape[-1] * env.observation_space.shape[-2]
+    n_tiles = env.action_space.nvec[0]
 
     model = PointerActorCritic(
         env.observation_space,
         env.action_space,
         lambda _: 1e-4,
-        hidden_size = hidden_size,
-        cnn_layers = 1,
-        n_heads = 2,
-        ff_size = 2 * hidden_size,
-        dropout = 0.1,
-        n_layers = 3,
+        True,
+        dict(
+            hidden_size = hidden_size,
+            cnn_layers = 1,
+            n_heads = 2,
+            ff_size = 2 * hidden_size,
+            dropout = 0.1,
+            n_layers = 3,
+        ),
     )
     tiles = torch.randn(batch_size, n_tiles, hidden_size)
     decoder_tokens = torch.randn(batch_size, 2, hidden_size)
@@ -123,6 +126,34 @@ def test_pointer_actor_critic():
     )
     actions, values, log_prob = model(obs)
     assert actions.shape == torch.Size([batch_size, 4])
+    assert values.shape == torch.Size([batch_size, 1])
+    assert log_prob.shape == torch.Size([batch_size])
+
+    env = EternityEnv('instances/eternity_A.txt', 0, False)
+
+    model = PointerActorCritic(
+        env.observation_space,
+        env.action_space,
+        lambda _: 1e-4,
+        False,
+        dict(
+            hidden_size = hidden_size,
+            cnn_layers = 1,
+            n_heads = 2,
+            ff_size = 2 * hidden_size,
+            dropout = 0.1,
+            n_layers = 3,
+        ),
+    )
+    obs = torch.randn(
+        batch_size,
+        env.observation_space.shape[0],
+        env.observation_space.shape[1],
+        env.observation_space.shape[2],
+        env.observation_space.shape[3],
+    )
+    actions, values, log_prob = model(obs)
+    assert actions.shape == torch.Size([batch_size, 2])
     assert values.shape == torch.Size([batch_size, 1])
     assert log_prob.shape == torch.Size([batch_size])
 

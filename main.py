@@ -13,6 +13,7 @@ def load_config_file(config_path: str) -> dict[str, any]:
         'seed': 0,
         'num_cpu': 4,
         'net_arch': {},
+        'manual_orient': False,
     }  # Default config
     with open(config_path, 'r') as config_file:
         config |= yaml.safe_load(config_file)

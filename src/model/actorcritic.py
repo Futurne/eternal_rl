@@ -27,12 +27,14 @@ class PointerActorCritic(ActorCriticPolicy):
         observation_space: gym.spaces.Space,
         action_space: gym.spaces.Space,
         lr_schedule: callable,
+        manual_orient: bool,
         net_arch: Optional[dict[str, any]] = None,
         *args,
         **kwargs,
     ):
         self.observation_space = observation_space
         self.action_space = action_space
+        self.manual_orient = manual_orient
 
         # Default args
         self.net_arch = {
@@ -90,12 +92,14 @@ class PointerActorCritic(ActorCriticPolicy):
             dropout = 0,  # 0% otherwise the attention will not sum up to 1
             batch_first = True,
         )
-        self.roll = nn.Sequential(
-            nn.Linear(self.net_arch['hidden_size'], self.observation_space.shape[0]),
-            nn.Softmax(dim=2),
-        )
-        self.value = nn.Linear(2 * self.net_arch['hidden_size'], 1)
 
+        if self.manual_orient:
+            self.roll = nn.Sequential(
+                nn.Linear(self.net_arch['hidden_size'], self.action_space.nvec[-1]),
+                nn.Softmax(dim=2),
+            )
+
+        self.value = nn.Linear(2 * self.net_arch['hidden_size'], 1)
 
         self.optimizer = self.optimizer_class(self.parameters(), lr=lr_schedule(1), **self.optimizer_kwargs)
 
@@ -141,10 +145,14 @@ class PointerActorCritic(ActorCriticPolicy):
             selected: The selected tiles to swap.
                 Shape of [batch_size, 2, n_tiles].
             rolls: The rolls to apply to the selected tiles.
+                Only outputted if the `manual_orient` parameter is `True`.
                 Shape of [batch_size, 2, n_rolls].
         """
         tiles, tokens = features
         _, selected = self.mha(tokens, tiles, tiles, need_weights=True)
+        if not self.manual_orient:
+            return selected
+
         rolls = self.roll(tokens)
         return selected, rolls
 
@@ -168,14 +176,22 @@ class PointerActorCritic(ActorCriticPolicy):
                 The first two are the distributions of the selected tiles to swap.
                 The last two are the distributions of the rolls to apply to selected tiles.
         """
-        selected, rolls = self.action_net(features)
+        actions = self.action_net(features)
+
+        if self.manual_orient:
+            selected, rolls = actions
+            rolls = [
+                Categorical(probs=rolls[:, i])
+                for i in range(rolls.shape[1])
+            ]
+        else:
+            selected = actions
+            rolls = []
+
         self.action_dist.distribution = [
             Categorical(probs=selected[:, i])
             for i in range(selected.shape[1])
-        ] + [
-            Categorical(probs=rolls[:, i])
-            for i in range(rolls.shape[1])
-        ]
+        ] + rolls
         return self.action_dist
 
     def extract_features(self, observations: torch.ByteTensor) -> torch.FloatTensor:

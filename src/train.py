@@ -22,7 +22,14 @@ class TrainEternal:
 
         See: https://stable-baselines3.readthedocs.io/en/master/guide/examples.html#multiprocessing-unleashing-the-power-of-vectorized-environments.
         """
-        _init = lambda seed: Monitor(EternityEnv(self.instance_path, self.max_steps, seed))
+        _init = lambda seed: Monitor(
+            EternityEnv(
+                self.instance_path,
+                self.max_steps,
+                self.manual_orient,
+                seed,
+            )
+        )
         env = SubprocVecEnv([lambda: _init(cpu_id + self.seed) for cpu_id in range(self.num_cpu)])
         return env
 
@@ -51,7 +58,10 @@ class TrainEternal:
                 env,
                 verbose = 1,
                 tensorboard_log = f'runs/{run.id}',
-                policy_kwargs = {'net_arch': self.net_arch},
+                policy_kwargs = {
+                    'net_arch': self.net_arch,
+                    'manual_orient': self.manual_orient,
+                },
             )
 
             # Train the agent
