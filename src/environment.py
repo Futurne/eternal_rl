@@ -113,11 +113,10 @@ class EternityEnv(gym.Env):
         self.tot_steps += 1
 
         observation = self.render()
-        reward = delta_matchs
-        reward -= 0.1  # Small penalty at each step
         win = self.matchs == self.best_matchs
-        reward = -0.1
-        reward += int(win)
+        # reward = delta_matchs
+        # reward -= 0.1  # Small penalty at each step
+        reward = int(win)
         timeout = self.tot_steps == self.max_steps
         done = win or timeout
 
@@ -168,7 +167,7 @@ class EternityEnv(gym.Env):
             return self.instance
         if mode == 'rgb_array':
             solution = self.instance.argmax(axis=1)
-            return display_solution(solution)
+            return display_solution(solution, self.matchs)
 
     def count_tile_matchs(self, coords: tuple[int, int]) -> int:
         """Count the matchs a tile has with its neighbours.

@@ -32,6 +32,7 @@ def numpy_sol_to_list(solution: np.ndarray) -> list[tuple]:
 
 def display_solution(
         solution: np.ndarray,
+        n_matchs: int,
         output_file: Optional[str] = None,
     ) -> Optional[np.ndarray]:
     """
@@ -57,7 +58,7 @@ def display_solution(
 
     # n_total_conflict = self.get_total_n_conflict(solution)
 
-    n_total_connection = 2 * board_size * (board_size - 1)
+    n_total_matchs = 2 * board_size * (board_size - 1)
     n_internal_conflict = 0
 
     for j in range(size):  # y-axis
@@ -180,6 +181,8 @@ def display_solution(
     plt.ylim(origin, size)
 
     title = f'Eternity of size {board_size} X {board_size}\n'
+    title += f'Internal conflicts: {n_internal_conflict}'
+    title += f'Matchs: {n_matchs} / {n_total_matchs}'
     # title += f'Total connections: {n_total_connection}    Internal connections: {n_internal_connection}\n'
     # title += f'Total Valid connections: {n_total_connection - n_total_conflict}     Internal valid internal connections: {n_internal_connection - n_internal_conflict}\n'
     # title += f'Total Invalid connections: {n_total_conflict}    Internal invalid connections: {n_internal_conflict}'
@@ -188,13 +191,13 @@ def display_solution(
     if output_file is not None:
         plt.savefig(output_file)
     else:
-        fig = plt.figure()
         fig.canvas.draw()
         image = PIL.Image.frombytes(
             'RGB',
             fig.canvas.get_width_height(),
             fig.canvas.tostring_rgb(),
         )
+        plt.close(fig)
         return np.array(image)
 
 

@@ -44,13 +44,12 @@ class TrainEternal:
         ) as run:
             # Create env
             env = self.make_env()
-            """
             env = VecVideoRecorder(
                 env,
                 f'videos/{run.id}',
-                record_video_trigger = lambda x: x % 2000,
+                record_video_trigger = lambda x: x % 2000 == 0,
+                video_length = 50,
             )
-            """
 
             # Create agent
             model = PPO(
