@@ -88,10 +88,6 @@ class EternityEnv(gym.Env):
         if self.manual_orient:
             rolls = [a for a in action[2:]]
 
-        # Count matchs before swap
-        previous_matchs = self.count_pairs_matchs(coords[0], coords[1])
-
-
         # Swap tiles
         self.swap_tiles(coords[0], coords[1])
 
@@ -103,12 +99,7 @@ class EternityEnv(gym.Env):
             self.best_orientation(coords[0])
             self.best_orientation(coords[1])
 
-        # Count new matchs
-        swapped_matchs = self.count_pairs_matchs(coords[0], coords[1])
-
-        delta_matchs = swapped_matchs - previous_matchs
-        self.matchs += delta_matchs
-
+        self.matchs = self.count_matchs()
         self.tot_steps += 1
 
         observation = self.render()
