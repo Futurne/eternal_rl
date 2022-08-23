@@ -89,8 +89,8 @@ class EternityEnv(gym.Env):
             rolls = [a for a in action[2:]]
 
         # Count matchs before swap
-        previous_matchs = self.count_tile_matchs(coords[0])
-        previous_matchs += self.count_tile_matchs(coords[1])
+        previous_matchs = self.count_pairs_matchs(coords[0], coords[1])
+
 
         # Swap tiles
         self.swap_tiles(coords[0], coords[1])
@@ -104,8 +104,7 @@ class EternityEnv(gym.Env):
             self.best_orientation(coords[1])
 
         # Count new matchs
-        swapped_matchs = self.count_tile_matchs(coords[0])
-        swapped_matchs += self.count_tile_matchs(coords[1])
+        swapped_matchs = self.count_pairs_matchs(coords[0], coords[1])
 
         delta_matchs = swapped_matchs - previous_matchs
         self.matchs += delta_matchs
@@ -194,6 +193,30 @@ class EternityEnv(gym.Env):
 
             if tile_class[WALL_ID] != 1:  # Ignore the walls
                 matchs += int(np.all(tile_class == other_class))  # Add one if the one-hots are the same
+
+        return matchs
+
+    def count_pairs_matchs(self, coords_1: tuple[int, int], coords_2: tuple[int, int]) -> int:
+        matchs = self.count_tile_matchs(coords_1) + self.count_tile_matchs(coords_2)
+
+        # Seek for duplicates matchs
+        tile_1_sides = [NORTH, EAST, SOUTH, WEST]
+        tile_2_sides = [SOUTH, WEST, NORTH, EAST]
+        tile_1_neighbours = [
+            (coords_1[0] + 1, coords_1[1]),  # (y, x)
+            (coords_1[0], coords_1[1] + 1),
+            (coords_1[0] - 1, coords_1[1]),
+            (coords_1[0], coords_1[1] - 1)
+        ]
+
+        for side_1, side_2, coords in zip(tile_1_sides, tile_2_sides, tile_1_neighbours):
+            if coords == coords_2:  # Potential duplicate !
+                color_1 = self.instance[side_1, :, coords_1[0], coords_1[1]].argmax()
+                color_2 = self.instance[side_2, :, coords_2[0], coords_2[1]].argmax()
+                if color_1 == color_2 and color_1 != WALL_ID:
+                    matchs -= 1  # Remove duplicate
+
+                break  # There can only be one duplicate
 
         return matchs
 

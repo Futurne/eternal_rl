@@ -95,10 +95,23 @@ def test_one_hot():
 
 
 def test_matchs_tiles():
-    env = EternityEnv('instances/eternity_A.txt', 0, False)
+    env = EternityEnv('instances/eternity_A.txt', 100, False)
     assert env.count_matchs() == 12
     assert env.count_tile_matchs((0, 0)) == 1
     assert env.count_tile_matchs((1, 2)) == 3
+
+    env.reset()
+    rng = np.random.default_rng(0)
+    for _ in range(10):
+        coords = [
+            rng.integers(0, env.n_pieces - 1)
+            for _ in range(2)
+        ]
+        _, _, done, _ = env.step(coords)
+        if done:
+            return
+
+        assert env.count_matchs() == env.matchs
 
 
 def test_swap_tiles():

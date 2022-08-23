@@ -181,7 +181,7 @@ def display_solution(
     plt.ylim(origin, size)
 
     title = f'Eternity of size {board_size} X {board_size}\n'
-    title += f'Internal conflicts: {n_internal_conflict}'
+    title += f'Internal conflicts: {n_internal_conflict}    '
     title += f'Matchs: {n_matchs} / {n_total_matchs}'
     # title += f'Total connections: {n_total_connection}    Internal connections: {n_internal_connection}\n'
     # title += f'Total Valid connections: {n_total_connection - n_total_conflict}     Internal valid internal connections: {n_internal_connection - n_internal_conflict}\n'
