@@ -1,10 +1,20 @@
-instance_path: instances/eternity_trivial_A.txt
+# Instance params
+instance_path: instances/eternity_A.txt
 max_steps: 100
 manual_orient: false
-total_timesteps: 5.0e5
+
+# Training parameters
+group: Test
+batch_size: 128
+lr: 3.0e-4
+gamma: 0.99
+total_timesteps: 5.0e5  # Total steps for training
+n_steps: 2048  # How many steps between each rollouts
 seed: 0
 num_cpu: 4
-group: Test
+
+# Model parameters
+load_pretrain: models/1287sxfw
 net_arch:
   hidden_size: 50
   cnn_layers: 1
