@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import math
+
 import gym
 import einops
 from einops.layers.torch import Rearrange
@@ -16,16 +18,18 @@ class CNNFeaturesExtractor(nn.Module):
             observation_space: gym.spaces.Box,
             n_channels: int,
             n_layers: int,
+            max_classes: int = 20,
         ):
         super().__init__()
-        n_sides, n_class, *_ = observation_space.shape
+        n_sides = observation_space.shape[0]
 
         self.embed_classes = nn.Sequential(
-            Rearrange('b s c s1 s2 -> (b s1 s2) (s c)'),  # Do batch linear inference on each token
-
-            nn.Linear(n_sides * n_class, n_channels),
+            nn.Embedding(max_classes, n_channels),
+            Rearrange('b r s1 s2 c -> b s1 s2 (c r)'),  # Concat rolls and class embeddings
+            nn.Linear(n_sides * n_channels, n_channels),  # Reduce dims
             nn.LayerNorm(n_channels),
             nn.LeakyReLU(),
+            Rearrange('b s1 s2 c -> b c s1 s2'),  # CNN-like shape
         )
 
         self.cnn = nn.ModuleList([
@@ -50,10 +54,8 @@ class CNNFeaturesExtractor(nn.Module):
             features: Extracted features of each token.
                 Shape of [batch_size, n_channels, map_size, map_size].
         """
-        b_size, m_size = observations.shape[0], observations.shape[-1]
-
-        x = self.embed_classes(observations)
-        x = einops.rearrange(x, '(b s1 s2) c -> b c s1 s2', b=b_size, s2=m_size)  # Go back to CNN-like shape
+        x = observations.argmax(dim=2)  # Get class ids
+        x = self.embed_classes(x)
         for layer in self.cnn:
             x = layer(x) + x
 
