@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 from typing import Optional
 
 import gym
@@ -199,4 +200,54 @@ class PointerActorCritic(ActorCriticPolicy):
         Cast the observations to a FloatTensor.
         """
         return observations.float()
+
+    def save(self, path: str):
+        """Save the parameters to be loaded later.
+
+        Input
+        -----
+            path: Directory where to put the models.
+        """
+        if not os.path.isdir(path):
+            os.makedirs(path)
+
+        torch.save(
+            self.mlp_extractor.state_dict(),
+            os.path.join(path, 'mlp_extractor.pt')
+        )
+        torch.save(
+            self.mha.state_dict(),
+            os.path.join(path, 'mha.pt')
+        )
+        torch.save(
+            self.value.state_dict(),
+            os.path.join(path, 'value.pt')
+        )
+        if self.manual_orient:
+            torch.save(
+                self.roll.state_dict(),
+                os.path.join(path, 'roll.pt')
+            )
+
+    def load_from_state_dict(self, path: str):
+        """Load from previously saved parameters.
+
+        Input
+        -----
+            path: Directory where to load the models.
+        """
+        self.mlp_extractor.load_state_dict(
+            torch.load(os.path.join(path, 'mlp_extractor.pt'))
+        )
+        self.mha.load_state_dict(
+            torch.load(os.path.join(path, 'mha.pt'))
+        )
+        self.value.load_state_dict(
+            torch.load(os.path.join(path, 'value.pt'))
+        )
+        if self.manual_orient:
+            self.roll.load_state_dict(
+                torch.load(os.path.join(path, 'roll.pt'))
+            )
+
 

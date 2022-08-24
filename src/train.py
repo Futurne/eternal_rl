@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+
+import torch
 import wandb
+import imageio
 from wandb.integration.sb3 import WandbCallback
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecVideoRecorder
@@ -10,6 +14,59 @@ from stable_baselines3.common.utils import set_random_seed
 
 from src.environment import EternityEnv
 from src.model.actorcritic import PointerActorCritic
+
+
+class EternalCallback(WandbCallback):
+    def __init__(
+            self,
+            model_path: str,
+            gif_path: str,
+            gif_length: int,
+            verbose: int = 0,
+            *args,
+            **kwargs
+    ):
+        super(EternalCallback, self).__init__(verbose, *args, **kwargs)
+
+        self.model_path = model_path
+        self.gif_path = gif_path
+        self.gif_length = gif_length
+
+        self.n_rollouts = 0
+
+    def _on_rollout_end(self):
+        super()._on_rollout_end()
+
+        self.model.policy.save(self.model_path)
+        filepath = self.create_gif()
+        wandb.log(
+            {'gif': wandb.Video(filepath, fps=3, format='gif')}
+        )
+
+        self.n_rollouts += 1
+
+    def create_gif(self) -> str:
+        images = []
+        model = self.model
+        env = model.env
+        obs = env.reset()
+        img = env.render(mode='rgb_array')
+
+        with torch.no_grad():
+            for _ in range(self.gif_length):
+                images.append(img)
+                action, _ = model.predict(obs)
+                obs, _, _, _ = env.step(action)
+                img = model.env.render(mode='rgb_array')
+
+        filepath = os.path.join(self.gif_path, f'{self.n_rollouts}.gif')
+        if not os.path.isdir(self.gif_path):
+            os.makedirs(self.gif_path)
+        imageio.mimsave(filepath, images, fps=3)
+
+        del model
+        del env
+        return filepath
 
 
 class TrainEternal:
@@ -40,21 +97,18 @@ class TrainEternal:
             config = self.__dict__,
             group = self.group,
             sync_tensorboard = True,  # Auto-upload the tensorboard metrics
-            # monitor_gym = True,  # Auto-upload the videos of the agent playing
         ) as run:
             # Create env
             env = self.make_env()
-            env = VecVideoRecorder(
-                env,
-                f'videos/{run.id}',
-                record_video_trigger = lambda x: x % 2000 == 0,
-                video_length = 50,
-            )
 
             # Create agent
             model = PPO(
                 PointerActorCritic,
                 env,
+                n_steps = self.n_steps,
+                learning_rate = self.lr,
+                batch_size = self.batch_size,
+                gamma = self.gamma,
                 verbose = 1,
                 tensorboard_log = f'runs/{run.id}',
                 policy_kwargs = {
@@ -62,14 +116,18 @@ class TrainEternal:
                     'manual_orient': self.manual_orient,
                 },
             )
+            if self.load_pretrain:
+                model.policy.load_from_state_dict(self.load_pretrain)
 
             # Train the agent
             model.learn(
                 self.total_timesteps,
-                callback = WandbCallback(
-                    verbose = 2,
-                    # model_save_path = f'models/{run.id}',
-                    # model_save_freq = 100,
+                callback = EternalCallback(
+                    gif_path = f'gifs/{run.id}',
+                    gif_length = 50,
+                    model_path = f'models/{run.id}',
                 ),
             )
+
+            env.close()
 

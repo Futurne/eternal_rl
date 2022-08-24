@@ -88,6 +88,8 @@ class EternityEnv(gym.Env):
         if self.manual_orient:
             rolls = [a for a in action[2:]]
 
+        previous_matchs = self.matchs
+
         # Swap tiles
         self.swap_tiles(coords[0], coords[1])
 
@@ -104,9 +106,9 @@ class EternityEnv(gym.Env):
 
         observation = self.render()
         win = self.matchs == self.best_matchs
-        # reward = delta_matchs
+        reward = self.matchs - previous_matchs
+        # reward = int(win)
         # reward -= 0.1  # Small penalty at each step
-        reward = int(win)
         timeout = self.tot_steps == self.max_steps
         done = win or timeout
 

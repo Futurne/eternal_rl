@@ -20,6 +20,7 @@ def load_config_file(config_path: str) -> dict[str, any]:
 
     # Preprocess values
     config['total_timesteps'] = int(float(config['total_timesteps']))
+    config['lr'] = float(config['lr'])
 
     return config
 
