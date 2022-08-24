@@ -19,9 +19,9 @@ from src.model.actorcritic import PointerActorCritic
 class EternalCallback(WandbCallback):
     def __init__(
             self,
-            model_path: str,
-            gif_path: str,
-            gif_length: int,
+            model_path: str = None,
+            gif_path: str = None,
+            gif_length: int = None,
             verbose: int = 0,
             *args,
             **kwargs
@@ -32,16 +32,22 @@ class EternalCallback(WandbCallback):
         self.gif_path = gif_path
         self.gif_length = gif_length
 
+        if gif_path:
+            assert gif_length  # gif_length must be setted when using gifs!
+
         self.n_rollouts = 0
 
     def _on_rollout_end(self):
         super()._on_rollout_end()
 
-        self.model.policy.save(self.model_path)
-        filepath = self.create_gif()
-        wandb.log(
-            {'gif': wandb.Video(filepath, fps=3, format='gif')}
-        )
+        if self.model_path:
+            self.model.policy.save(self.model_path)
+
+        if self.gif_path:
+            filepath = self.create_gif()
+            wandb.log(
+                {'gif': wandb.Video(filepath, fps=3, format='gif')}
+            )
 
         self.n_rollouts += 1
 
@@ -124,7 +130,7 @@ class TrainEternal:
                 self.total_timesteps,
                 callback = EternalCallback(
                     gif_path = f'gifs/{run.id}',
-                    gif_length = 50,
+                    gif_length = 25,
                     model_path = f'models/{run.id}',
                 ),
             )

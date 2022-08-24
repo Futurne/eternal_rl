@@ -6,15 +6,15 @@ manual_orient: false
 # Training parameters
 group: Test
 batch_size: 128
-lr: 3.0e-4
+lr: 1.0e-4
 gamma: 0.99
 total_timesteps: 5.0e5  # Total steps for training
 n_steps: 2048  # How many steps between each rollouts
 seed: 0
-num_cpu: 4
+num_cpu: 6
 
 # Model parameters
-load_pretrain: models/1287sxfw
+load_pretrain:  # Keep empty for no pretraining
 net_arch:
   hidden_size: 50
   cnn_layers: 1
