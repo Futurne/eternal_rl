@@ -1,8 +1,8 @@
+config.yaml
 subject/
-**/__pycache__/
-*.swap
 models/
 wandb/
 runs/
 videos/
-config.yaml
+gifs/
+**/__pycache__/
