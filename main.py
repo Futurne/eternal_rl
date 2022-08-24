@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import yaml
+import typer
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 
@@ -25,8 +26,12 @@ def load_config_file(config_path: str) -> dict[str, any]:
     return config
 
 
-if __name__ == '__main__':
-    config = load_config_file('config.yaml')
+def main(config_path: str):
+    config = load_config_file(config_path)
     train = TrainEternal(config)
     train.train()
+
+
+if __name__ == '__main__':
+    typer.run(main)
 

@@ -1,0 +1,24 @@
+# Instance params
+instance_path: instances/eternity_trivial_A.txt
+max_steps: 100
+manual_orient: false
+
+# Training parameters
+group: Trivial size
+batch_size: 256
+lr: 1.0e-4
+gamma: 0.99
+total_timesteps: 3.0e5  # Total steps for training
+n_steps: 2048  # How many steps between each rollouts
+seed: 0
+num_cpu: 6
+
+# Model parameters
+load_pretrain:  # Keep empty for no pretraining
+net_arch:
+  hidden_size: 50
+  cnn_layers: 1
+  n_heads: 5
+  ff_size: 100
+  dropout: 0.1
+  n_layers: 3

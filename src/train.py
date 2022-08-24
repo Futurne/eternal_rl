@@ -91,7 +91,8 @@ class TrainEternal:
                 self.max_steps,
                 self.manual_orient,
                 seed,
-            )
+            ),
+            info_keywords = ('matchs', 'ratio'),
         )
         env = SubprocVecEnv([lambda: _init(cpu_id + self.seed) for cpu_id in range(self.num_cpu)])
         return env
@@ -129,8 +130,8 @@ class TrainEternal:
             model.learn(
                 self.total_timesteps,
                 callback = EternalCallback(
-                    gif_path = f'gifs/{run.id}',
-                    gif_length = 25,
+                    # gif_path = f'gifs/{run.id}',
+                    # gif_length = 25,
                     model_path = f'models/{run.id}',
                 ),
             )
