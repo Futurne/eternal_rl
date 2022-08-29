@@ -106,12 +106,12 @@ class EternityEnv(gym.Env):
 
         observation = self.render()
         win = self.matchs == self.best_matchs
-        # reward = self.matchs - previous_matchs
+        reward = self.matchs - previous_matchs
         # reward = int(win)
         # reward -= 0.1  # Small penalty at each step
         timeout = self.tot_steps == self.max_steps
         done = win or timeout
-        reward = 10 * self.matchs / self.best_matchs if done else 0
+        # reward = self.matchs / self.best_matchs if done else 0
 
         info = {
             'matchs': self.matchs,
