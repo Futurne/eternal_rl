@@ -6,11 +6,13 @@ import os
 import torch
 import wandb
 import imageio
+import numpy as np
 from wandb.integration.sb3 import WandbCallback
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecVideoRecorder
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.results_plotter import load_results, ts2xy
 
 from src.environment import EternityEnv
 from src.model.actorcritic import PointerActorCritic
@@ -36,6 +38,23 @@ class EternalCallback(WandbCallback):
             assert gif_length  # gif_length must be setted when using gifs!
 
         self.n_rollouts = 0
+        self.mean_rollout = 10
+
+    def _on_step(self) -> bool:
+        """Compute the mean epidode lengths and update the environment accordingly.
+        """
+        super_return = super()._on_step()
+
+        ep_len = self.model.env.env_method('get_episode_lengths')
+        ep_len = np.array(ep_len)  # [n_envs, n_episodes]
+        if ep_len.shape[1] < self.mean_rollout:
+            return super_return
+
+        # Mean length over the last 'mean_rollout' episodes
+        ep_len_mean = np.mean(ep_len[:, :-self.mean_rollout])
+        self.model.env.env_method('update_instance', [ep_len_mean])
+
+        return super_return
 
     def _on_rollout_end(self):
         super()._on_rollout_end()
@@ -70,8 +89,6 @@ class EternalCallback(WandbCallback):
             os.makedirs(self.gif_path)
         imageio.mimsave(filepath, images, fps=3)
 
-        del model
-        del env
         return filepath
 
 

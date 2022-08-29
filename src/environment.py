@@ -20,6 +20,18 @@ ORIGIN_EAST = 3
 
 WALL_ID = 0
 
+ENV_DIR = 'instances'
+ENV_ORDERED = [
+    'eternity_trivial_A.txt',
+    'eternity_trivial_B.txt',
+    'eternity_A.txt',
+    'eternity_B.txt',
+    'eternity_C.txt',
+    'eternity_D.txt',
+    'eternity_E.txt',
+    'eternity_complet.txt',
+]
+
 
 class EternityEnv(gym.Env):
     metadata = {'render.modes': ['rgb_array', 'computer']}
@@ -31,6 +43,7 @@ class EternityEnv(gym.Env):
             manual_orient: bool,
             reward_type: str = 'win_ratio',
             reward_penalty: float = 0.0,
+            curriculum_learning: bool = False,
             seed: int = 0,
     ):
         super().__init__()
@@ -69,6 +82,10 @@ class EternityEnv(gym.Env):
 
         self.reward_type = reward_type
         self.reward_penalty = reward_penalty
+
+        # Curriculum learning init
+        self.curriculum_learning = curriculum_learning
+        self.target_length = self.compute_target_length()
 
     def step(self, action: np.ndarray) -> tuple[np.ndarray, int, bool, dict]:
         """Swap the two choosen tiles and orient them in the best possible way.
@@ -284,6 +301,15 @@ class EternityEnv(gym.Env):
         """Modify the seed.
         """
         self.rng = default_rng(seed)
+
+    def compute_target_length(self) -> float:
+        """Returns the maximum number of steps the agent can have
+        to solve the instance before upgrading the environment.
+        """
+        return self.best_matchs
+
+    def update_instance(self, ep_len_mean: float):
+        pass
 
 
 def read_instance_file(instance_path: str) -> np.ndarray:

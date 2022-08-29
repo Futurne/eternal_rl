@@ -17,7 +17,7 @@ def load_config_file(config_path: str) -> dict[str, any]:
         'manual_orient': False,
         'gae_lambda': 0.99,
         'clip_range': 0.2,
-        'normalize_advangate': True,
+        'normalize_advantage': True,
         'ent_coef': 0,
         'vf_coef': 0.5,
     }  # Default config

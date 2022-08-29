@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+
 import pytest
 import numpy as np
 from stable_baselines3.common.env_checker import check_env
 
-from src.environment import EternityEnv, read_instance_file, to_one_hot
+from src.environment import EternityEnv, read_instance_file, to_one_hot, ENV_DIR, ENV_ORDERED
 
 
 def test_read_instance():
@@ -42,6 +44,16 @@ def test_read_instance():
     assert np.all(instance[:, 3, 3] == np.array([1, 0, 0, 7]))
     assert np.all(instance[:, 3, 2] == np.array([4, 7, 0, 3]))
     assert np.all(instance == real)
+
+
+def test_env_sizes():
+    previous_size = 0
+    for path in ENV_ORDERED:
+        path = os.path.join(ENV_DIR, path)
+        size = read_instance_file(path).shape[-1]
+        assert previous_size < size
+
+        previous_shape = size
 
 
 def test_one_hot():
