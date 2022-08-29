@@ -1,0 +1,26 @@
+program: main.py
+command:
+  - ${env}
+  - ${interpreter}
+  - ${program}
+  - "configs/normal_env.yaml"
+  - ${args}
+method: bayes
+metric:
+  name: rollout/ep_len_mean
+  goal: minimize
+parameters:
+  gae_lambda:
+    min: 0.5
+    max: 0.99
+  clip_range:
+    min: 0.1
+    max: 0.5
+  normalize_advantage:
+    values: [True, False]
+  ent_coef:
+    min: 0.0
+    max: 1.0
+  vf_coef:
+    min: 0.3
+    max: 0.7

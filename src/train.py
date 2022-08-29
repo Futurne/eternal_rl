@@ -121,6 +121,11 @@ class TrainEternal:
                 learning_rate = self.lr,
                 batch_size = self.batch_size,
                 gamma = self.gamma,
+                gae_lambda = self.gae_lambda,
+                clip_range = self.clip_range,
+                normalize_advantage = self.normalize_advantage,
+                ent_coef = self.ent_coef,
+                vf_coef = self.vf_coef,
                 verbose = 1,
                 tensorboard_log = f'runs/{run.id}',
                 policy_kwargs = {

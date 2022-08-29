@@ -15,6 +15,11 @@ def load_config_file(config_path: str) -> dict[str, any]:
         'num_cpu': 4,
         'net_arch': {},
         'manual_orient': False,
+        'gae_lambda': 0.99,
+        'clip_range': 0.2,
+        'normalize_advangate': True,
+        'ent_coef': 0,
+        'vf_coef': 0.5,
     }  # Default config
     with open(config_path, 'r') as config_file:
         config |= yaml.safe_load(config_file)
