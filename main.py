@@ -33,5 +33,10 @@ def main(config_path: str):
 
 
 if __name__ == '__main__':
-    typer.run(main)
+    import sys
+
+    if len(sys.argv) > 2:  # For sweeps
+        main(sys.argv[1])
+    else:
+        typer.run(main)
 

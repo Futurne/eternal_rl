@@ -2,6 +2,8 @@
 instance_path: instances/eternity_A.txt
 max_steps: 16
 manual_orient: false
+reward_type: 'win_ratio'
+reward_penalty: 0.1
 
 # Training parameters
 group: Medium size - no pretraining

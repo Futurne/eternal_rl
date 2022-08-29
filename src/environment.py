@@ -29,6 +29,8 @@ class EternityEnv(gym.Env):
             instance_path: str,
             max_steps: int,
             manual_orient: bool,
+            reward_type: str = 'win_ratio',
+            reward_penalty: float = 0.0,
             seed: int = 0,
     ):
         super().__init__()
@@ -64,6 +66,9 @@ class EternityEnv(gym.Env):
             shape=self.render().shape,
             dtype=np.uint8
         )
+
+        self.reward_type = reward_type
+        self.reward_penalty = reward_penalty
 
     def step(self, action: np.ndarray) -> tuple[np.ndarray, int, bool, dict]:
         """Swap the two choosen tiles and orient them in the best possible way.
@@ -106,12 +111,22 @@ class EternityEnv(gym.Env):
 
         observation = self.render()
         win = self.matchs == self.best_matchs
-        reward = self.matchs - previous_matchs
-        # reward = int(win)
-        # reward -= 0.1  # Small penalty at each step
         timeout = self.tot_steps == self.max_steps
         done = win or timeout
-        # reward = self.matchs / self.best_matchs if done else 0
+
+        match self.reward_type:
+            case 'win_ratio':
+                reward = self.matchs / self.best_matchs if done else 0
+            case 'win':
+                reward = int(win)
+            case 'delta':
+                reward = self.matchs - previous_matchs
+            case 'penalty':
+                reward = 0
+            case _:
+                raise RuntimeError(f'Unknown reward type: {self.reward_type}.')
+
+        reward -= self.reward_penalty  # Small penalty at each step
 
         info = {
             'matchs': self.matchs,

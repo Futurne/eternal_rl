@@ -1,0 +1,22 @@
+program: main.py
+command:
+  - ${env}
+  - ${interpreter}
+  - ${program}
+  - "configs/trivial_env.yaml"
+  - ${args}
+method: bayes
+metric:
+  name: rollout/ep_len_mean
+  goal: minimize
+parameters:
+  learning_rate:
+    min: 1.0e-5
+    max: 1.0e-3
+  gamma:
+    min: 0.3
+    max: 0.999
+  reward_type:
+    values: ["win_ratio", "win", "delta", "penalty"]
+  reward_penalty:
+    values: [0, 0.1, 1]

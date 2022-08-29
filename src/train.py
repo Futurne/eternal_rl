@@ -90,7 +90,9 @@ class TrainEternal:
                 self.instance_path,
                 self.max_steps,
                 self.manual_orient,
-                seed,
+                reward_type = self.reward_type,
+                reward_penalty = self.reward_penalty,
+                seed = seed,
             ),
             info_keywords = ('matchs', 'ratio'),
         )
@@ -105,6 +107,9 @@ class TrainEternal:
             group = self.group,
             sync_tensorboard = True,  # Auto-upload the tensorboard metrics
         ) as run:
+            # Get wandb config => sweeps can change this config
+            self.__dict__ |= wandb.config
+
             # Create env
             env = self.make_env()
 
@@ -122,6 +127,7 @@ class TrainEternal:
                     'net_arch': self.net_arch,
                     'manual_orient': self.manual_orient,
                 },
+                seed = self.seed,
             )
             if self.load_pretrain:
                 model.policy.load_from_state_dict(self.load_pretrain)
