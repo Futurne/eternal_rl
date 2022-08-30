@@ -43,18 +43,19 @@ class EternalCallback(WandbCallback):
     def _on_step(self) -> bool:
         """Compute the mean epidode lengths and update the environment accordingly.
         """
-        super_return = super()._on_step()
 
         ep_len = self.model.env.env_method('get_episode_lengths')
-        ep_len = np.array(ep_len)  # [n_envs, n_episodes]
-        if ep_len.shape[1] < self.mean_rollout:
-            return super_return
+        means = []
+        for episodes in ep_len:
+            if len(episodes) > self.mean_rollout:
+                # Mean length over the last 'mean_rollout' episodes
+                means.append(np.mean(episodes[:-self.mean_rollout]))
 
-        # Mean length over the last 'mean_rollout' episodes
-        ep_len_mean = np.mean(ep_len[:, :-self.mean_rollout])
-        self.model.env.env_method('update_instance', [ep_len_mean])
+        if means:
+            ep_len_mean = np.mean(means)
+            self.model.env.env_method('update_ep_len_mean', ep_len_mean)
 
-        return super_return
+        return super()._on_step()
 
     def _on_rollout_end(self):
         super()._on_rollout_end()
@@ -109,6 +110,7 @@ class TrainEternal:
                 self.manual_orient,
                 reward_type = self.reward_type,
                 reward_penalty = self.reward_penalty,
+                curriculum_learning = self.curriculum_learning,
                 seed = seed,
             ),
             info_keywords = ('matchs', 'ratio'),

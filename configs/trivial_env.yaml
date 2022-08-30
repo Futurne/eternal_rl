@@ -1,19 +1,20 @@
 # Instance params
-instance_path: instances/eternity_trivial_B.txt
-max_steps: 10
+instance_path: instances/eternity_trivial_A.txt
+max_steps: 100
 manual_orient: false
 reward_type: 'win_ratio'
 reward_penalty: 0.1
+curriculum_learning: True
 
 # Training parameters
-group: Test
+group: Sweep - Reward type - trivial B
 batch_size: 256
 lr: 1.0e-4
-gamma: 0.55
-total_timesteps: 1.0e5  # Total steps for training
+gamma: 0.99
+total_timesteps: 1.0e6  # Total steps for training
 n_steps: 2048  # How many steps between each rollouts
 seed: 0
-num_cpu: 6
+num_cpu: 1
 
 # Model parameters
 load_pretrain:  # Keep empty for no pretraining

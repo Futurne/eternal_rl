@@ -1,3 +1,4 @@
+import os
 from itertools import product
 
 import gym
@@ -49,6 +50,7 @@ class EternityEnv(gym.Env):
         super().__init__()
 
         self.rng = default_rng(seed)
+        self.instance_path = instance_path
         instance = read_instance_file(instance_path)
         self.instance = to_one_hot(instance)  # Shape is [4, n_class, size, size]
 
@@ -85,7 +87,7 @@ class EternityEnv(gym.Env):
 
         # Curriculum learning init
         self.curriculum_learning = curriculum_learning
-        self.target_length = self.compute_target_length()
+        self.ep_len_mean = float('+inf')
 
     def step(self, action: np.ndarray) -> tuple[np.ndarray, int, bool, dict]:
         """Swap the two choosen tiles and orient them in the best possible way.
@@ -137,7 +139,7 @@ class EternityEnv(gym.Env):
             case 'win':
                 reward = int(win)
             case 'delta':
-                reward = self.matchs - previous_matchs
+                reward = (self.matchs - previous_matchs) / self.best_matchs
             case 'penalty':
                 reward = 0
             case _:
@@ -156,6 +158,9 @@ class EternityEnv(gym.Env):
     def reset(self) -> np.ndarray:
         """Scramble the tiles and randomly orient them.
         """
+        if self.ep_len_mean <= self.upgrade_threshold():
+            self.upgrade_instance()
+
         instance = self.instance
         instance = instance.reshape(4 * self.n_class, -1)  # Shape is [4 * n_class, size * size]
         instance = np.transpose(
@@ -302,14 +307,54 @@ class EternityEnv(gym.Env):
         """
         self.rng = default_rng(seed)
 
-    def compute_target_length(self) -> float:
+    def upgrade_threshold(self) -> float:
         """Returns the maximum number of steps the agent can have
         to solve the instance before upgrading the environment.
         """
-        return self.best_matchs
+        return 3 * self.best_matchs
 
-    def update_instance(self, ep_len_mean: float):
-        pass
+    def upgrade_instance(self):
+        instance_id = [
+            i for i, p in enumerate(ENV_ORDERED)
+            if p in self.instance_path
+        ][0]
+        if instance_id + 1 == len(ENV_ORDERED):
+            return  # We are at the last instance!
+
+        instance_path = os.path.join(ENV_DIR, ENV_ORDERED[instance_id + 1])
+        print(f'Upgrading to {instance_path}!')
+        instance = read_instance_file(instance_path)
+        self.instance = to_one_hot(instance)  # Shape is [4, n_class, size, size]
+
+        self.max_steps = int(self.max_steps * 1.5)
+        self.size = self.instance.shape[-1]
+        self.n_class = self.instance.shape[1]
+        self.n_pieces = self.size * self.size
+        self.matchs = 0
+        self.best_matchs = 2 * self.size * (self.size - 1)
+
+        if self.manual_orient:
+            self.action_space = spaces.MultiDiscrete([
+                self.n_pieces,  # Tile id to swap
+                self.n_pieces,  # Tile id to swap
+                4,  # How much rolls for the first tile
+                4,  # How much rolls for the second tile
+            ])
+        else:
+            self.action_space = spaces.MultiDiscrete([
+                self.n_pieces,  # Tile id to swap
+                self.n_pieces,  # Tile id to swap
+            ])
+
+        self.observation_space = spaces.Box(
+            low=0,
+            high=1,
+            shape=self.render().shape,
+            dtype=np.uint8
+        )
+
+    def update_ep_len_mean(self, ep_len_mean: float):
+        self.ep_len_mean = ep_len_mean
 
 
 def read_instance_file(instance_path: str) -> np.ndarray:
