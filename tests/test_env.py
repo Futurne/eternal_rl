@@ -7,7 +7,7 @@ import pytest
 import numpy as np
 from stable_baselines3.common.env_checker import check_env
 
-from src.environment import EternityEnv, read_instance_file, to_one_hot, ENV_DIR, ENV_ORDERED
+from src.environment import EternityEnv, read_instance_file, to_one_hot, next_instance, ENV_DIR, ENV_ORDERED
 
 
 def test_read_instance():
@@ -136,6 +136,33 @@ def test_swap_tiles():
 
     assert np.all(tile_1 == env.instance[:, :, coords_2[0], coords_2[1]])
     assert np.all(tile_2 == env.instance[:, :, coords_1[0], coords_1[1]])
+
+
+@pytest.mark.parametrize(
+    'instance_1, instance_2',
+    [
+        (
+            'eternity_trivial_A.txt',
+            'eternity_trivial_B.txt',
+        ),
+        (
+            'eternity_A.txt',
+            'eternity_B.txt',
+        ),
+        (
+            'eternity_C.txt',
+            'eternity_D.txt',
+        ),
+        (
+            'eternity_E.txt',
+            'eternity_complet.txt',
+        ),
+    ]
+)
+def test_instance_upgrade(instance_1: str, instance_2: str):
+    assert next_instance(
+        os.path.join(ENV_DIR, instance_1)
+    ) == os.path.join(ENV_DIR, instance_2)
 
 
 @pytest.mark.parametrize(

@@ -40,6 +40,8 @@ def main(config_path: str):
 if __name__ == '__main__':
     import sys
 
+    main(sys.argv[1])
+    sys.exit(0)
     if len(sys.argv) > 2:  # For sweeps
         main(sys.argv[1])
     else:

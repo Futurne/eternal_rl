@@ -9,12 +9,12 @@ import imageio
 import numpy as np
 from wandb.integration.sb3 import WandbCallback
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import SubprocVecEnv, VecVideoRecorder
+from stable_baselines3.common.vec_env import SubprocVecEnv 
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 
-from src.environment import EternityEnv
+from src.environment import EternityEnv, next_instance
 from src.model.actorcritic import PointerActorCritic
 
 
@@ -41,9 +41,9 @@ class EternalCallback(WandbCallback):
         self.mean_rollout = 10
 
     def _on_step(self) -> bool:
-        """Compute the mean epidode lengths and update the environment accordingly.
+        """Compute the mean episode length and stop the training
+        if the mean episode length is lower than a specific threshold.
         """
-
         ep_len = self.model.env.env_method('get_episode_lengths')
         means = []
         for episodes in ep_len:
@@ -51,11 +51,9 @@ class EternalCallback(WandbCallback):
                 # Mean length over the last 'mean_rollout' episodes
                 means.append(np.mean(episodes[:-self.mean_rollout]))
 
-        if means:
-            ep_len_mean = np.mean(means)
-            self.model.env.env_method('update_ep_len_mean', ep_len_mean)
-
-        return super()._on_step()
+        ep_len_mean = np.mean(means) if means else float('+inf')
+        threshold = np.mean(self.model.env.env_method('upgrade_threshold'))
+        return super()._on_step() and bool(ep_len_mean > threshold)
 
     def _on_rollout_end(self):
         super()._on_rollout_end()
@@ -110,13 +108,54 @@ class TrainEternal:
                 self.manual_orient,
                 reward_type = self.reward_type,
                 reward_penalty = self.reward_penalty,
-                curriculum_learning = self.curriculum_learning,
                 seed = seed,
             ),
             info_keywords = ('matchs', 'ratio'),
         )
-        env = SubprocVecEnv([lambda: _init(cpu_id + self.seed) for cpu_id in range(self.num_cpu)])
+        env = SubprocVecEnv([
+            lambda: _init(cpu_id + self.seed) for cpu_id in range(self.num_cpu)
+        ])
         return env
+
+    def train_on_env(self, run):
+        # Create env
+        env = self.make_env()
+
+        # Create agent
+        model = PPO(
+            PointerActorCritic,
+            env,
+            n_steps = self.n_steps,
+            learning_rate = self.lr,
+            batch_size = self.batch_size,
+            gamma = self.gamma,
+            gae_lambda = self.gae_lambda,
+            clip_range = self.clip_range,
+            normalize_advantage = self.normalize_advantage,
+            ent_coef = self.ent_coef,
+            vf_coef = self.vf_coef,
+            verbose = 1,
+            tensorboard_log = f'runs/{run.id}',
+            policy_kwargs = {
+                'net_arch': self.net_arch,
+                'manual_orient': self.manual_orient,
+            },
+            seed = self.seed,
+        )
+        if self.load_pretrain:
+            model.policy.load_from_state_dict(self.load_pretrain)
+
+        # Train the agent
+        model.learn(
+            self.total_timesteps,
+            callback = EternalCallback(
+                # gif_path = f'gifs/{run.id}',
+                # gif_length = 25,
+                model_path = f'models/{run.id}',
+            ),
+        )
+
+        env.close()
 
     def train(self):
         with wandb.init(
@@ -129,42 +168,11 @@ class TrainEternal:
             # Get wandb config => sweeps can change this config
             self.__dict__ |= wandb.config
 
-            # Create env
-            env = self.make_env()
+            self.train_on_env(run)
 
-            # Create agent
-            model = PPO(
-                PointerActorCritic,
-                env,
-                n_steps = self.n_steps,
-                learning_rate = self.lr,
-                batch_size = self.batch_size,
-                gamma = self.gamma,
-                gae_lambda = self.gae_lambda,
-                clip_range = self.clip_range,
-                normalize_advantage = self.normalize_advantage,
-                ent_coef = self.ent_coef,
-                vf_coef = self.vf_coef,
-                verbose = 1,
-                tensorboard_log = f'runs/{run.id}',
-                policy_kwargs = {
-                    'net_arch': self.net_arch,
-                    'manual_orient': self.manual_orient,
-                },
-                seed = self.seed,
-            )
-            if self.load_pretrain:
-                model.policy.load_from_state_dict(self.load_pretrain)
-
-            # Train the agent
-            model.learn(
-                self.total_timesteps,
-                callback = EternalCallback(
-                    # gif_path = f'gifs/{run.id}',
-                    # gif_length = 25,
-                    model_path = f'models/{run.id}',
-                ),
-            )
-
-            env.close()
+            while self.curriculum_learning:
+                self.instance_path = next_instance(self.instance_path)
+                print(f'Upgrading instance to: {self.instance_path}.')
+                self.load_pretrain = f'models/{run.id}'
+                self.train_on_env(run)
 
