@@ -39,7 +39,7 @@ class TrainEternal:
         ])
         return env
 
-    def train_on_env(self) -> int:
+    def train_on_env(self, pretrain_rollouts: int = 0) -> tuple[int, EternalCallback]:
         run_id = 0
         with wandb.init(
             project = 'Eternal RL',
@@ -84,25 +84,30 @@ class TrainEternal:
             if self.load_pretrain:
                 model.policy.load_from_state_dict(self.load_pretrain)
 
+            # Callback
+            callback = EternalCallback(
+                # gif_path = f'gifs/{run_id}',
+                # gif_length = 25,
+                model_path = f'models/{run_id}',
+                pretrain_rollouts = pretrain_rollouts,
+            )
+
             # Train the agent
             model.learn(
                 self.total_timesteps,
-                callback = EternalCallback(
-                    # gif_path = f'gifs/{run_id}',
-                    # gif_length = 25,
-                    model_path = f'models/{run_id}',
-                ),
+                callback = callback,
             )
 
             env.close()
 
-        return run_id
+        return run_id, callback
 
     def train(self):
-        run_id = self.train_on_env()
-        while self.curriculum_learning:
+        run_id, callback = self.train_on_env()
+        while self.curriculum_learning and callback.has_won:
             self.instance_path = next_instance(self.instance_path)
             print(f'Upgrading instance to: {self.instance_path}.')
             self.load_pretrain = f'models/{run_id}'
-            self.train_on_env()
+            pretrain_rollouts = callback.pretrain_rollouts + callback.n_rollouts
+            run_id, callback = self.train_on_env(pretrain_rollouts)
 

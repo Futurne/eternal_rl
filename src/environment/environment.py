@@ -147,6 +147,9 @@ class EternityEnv(gym.Env):
             'win': win,
         }
 
+        if win and self.instance_path == os.path.join(ENV_DIR, 'eternity_complet.txt'):
+            self.render(mode='rgb_array', output_file='solution.png')
+
         return observation, reward, done, info
 
     def reset(self) -> np.ndarray:
@@ -179,7 +182,7 @@ class EternityEnv(gym.Env):
 
         return self.render()
 
-    def render(self, mode: str='computer') -> np.ndarray:
+    def render(self, mode: str='computer', output_file: str=None) -> np.ndarray:
         """Transform the instance into an observation.
 
         The observation is a one-hot map of shape [4, n_class, size, size].
@@ -188,7 +191,7 @@ class EternityEnv(gym.Env):
             return self.instance
         if mode == 'rgb_array':
             solution = self.instance.argmax(axis=1)
-            return display_solution(solution, self.matchs)
+            return display_solution(solution, self.matchs, output_file)
 
     def count_tile_matchs(self, coords: tuple[int, int]) -> int:
         """Count the matchs a tile has with its neighbours.
