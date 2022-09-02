@@ -1,6 +1,7 @@
 # Eternal RL - Solving Eternity Puzzle using RL
 
 TODO
-* Implement curriculum training -> threshold using the mean reward or mean episode length
-* Understand losses and other metrics of PPO!
+* Implement curriculum training -> threshold using the mean reward
+* Max steps in the environment proportional with the best matchs variable
+* When the final environment is done, save an image of it
 

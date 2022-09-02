@@ -6,15 +6,11 @@ import typer
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 
-from src.train import TrainEternal
+from src.train.train import TrainEternal
 
 
 def load_config_file(config_path: str) -> dict[str, any]:
     config = {
-        'seed': 0,
-        'num_cpu': 4,
-        'net_arch': {},
-        'manual_orient': False,
         'gae_lambda': 0.99,
         'clip_range': 0.2,
         'normalize_advantage': True,
@@ -23,6 +19,14 @@ def load_config_file(config_path: str) -> dict[str, any]:
     }  # Default config
     with open(config_path, 'r') as config_file:
         config |= yaml.safe_load(config_file)
+
+    # Load default configuration is any
+    if 'default_conf' in config:
+        with open(config['default_conf'], 'r') as config_file:
+            config |= {
+                key: value for key, value in yaml.safe_load(config_file).items()
+                if key not in config
+            }
 
     # Preprocess values
     config['total_timesteps'] = int(float(config['total_timesteps']))

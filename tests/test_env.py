@@ -7,7 +7,14 @@ import pytest
 import numpy as np
 from stable_baselines3.common.env_checker import check_env
 
-from src.environment import EternityEnv, read_instance_file, to_one_hot, next_instance, ENV_DIR, ENV_ORDERED
+from src.environment.environment import (
+    EternityEnv,
+    read_instance_file,
+    to_one_hot,
+    next_instance,
+    ENV_DIR,
+    ENV_ORDERED,
+)
 
 
 def test_read_instance():

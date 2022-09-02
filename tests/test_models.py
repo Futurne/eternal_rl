@@ -5,7 +5,7 @@ import gym
 import torch
 import numpy as np
 
-from src.environment import EternityEnv
+from src.environment.environment import EternityEnv
 from src.model.extractor import CNNFeaturesExtractor, TransformerFeaturesExtractor, FeaturesExtractorModel
 from src.model.actorcritic import PointerActorCritic
 

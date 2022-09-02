@@ -6,7 +6,7 @@ import numpy as np
 from gym import spaces
 from numpy.random import default_rng
 
-from src.draw import display_solution
+from src.environment.draw import display_solution
 
 
 NORTH = 0
@@ -40,7 +40,6 @@ class EternityEnv(gym.Env):
     def __init__(
             self,
             instance_path: str,
-            max_steps: int,
             manual_orient: bool,
             reward_type: str = 'win_ratio',
             reward_penalty: float = 0.0,
@@ -53,12 +52,12 @@ class EternityEnv(gym.Env):
         instance = read_instance_file(instance_path)
         self.instance = to_one_hot(instance)  # Shape is [4, n_class, size, size]
 
-        self.max_steps = max_steps
         self.size = self.instance.shape[-1]
         self.n_class = self.instance.shape[1]
         self.n_pieces = self.size * self.size
-        self.matchs = 0
+        self.max_steps = self.n_pieces * 2
         self.best_matchs = 2 * self.size * (self.size - 1)
+        self.matchs = 0
 
         self.manual_orient = manual_orient
         if manual_orient:
@@ -298,12 +297,6 @@ class EternityEnv(gym.Env):
         """Modify the seed.
         """
         self.rng = default_rng(seed)
-
-    def upgrade_threshold(self) -> float:
-        """Returns the maximum number of steps the agent can have
-        to solve the instance before upgrading the environment.
-        """
-        return 2 * self.best_matchs
 
 
 def read_instance_file(instance_path: str) -> np.ndarray:

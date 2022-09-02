@@ -1,0 +1,17 @@
+# This is a default configuration, other files can point
+# to this file to load all those parameters.
+# If any of the parameters are also defined in the other conf,
+# they will get overwritten.
+# Not all parameters are defined here!
+
+# Instance params
+manual_orient: false
+curriculum_learning: False
+
+# Training parameters
+batch_size: 256
+lr: 2.0e-4
+gamma: 0.99
+n_steps: 2048  # How many steps between each rollouts
+seed: 0
+num_cpu: 6
