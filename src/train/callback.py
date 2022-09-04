@@ -42,14 +42,13 @@ class EternalCallback(WandbCallback):
         """Compute the mean episode length and stop the training
         if the mean episode length is lower than a specific threshold.
         """
-        rewards = self.model.env.env_method('get_episode_rewards')[self.pretrain_rollouts:]
+        rewards = self.model.env.env_method('get_episode_rewards')
         rewards = [
-            np.mean(episodes[:-ROLLOUTS_MEAN]) for episodes in rewards
+            np.mean(episodes[-ROLLOUTS_MEAN:]) for episodes in rewards
             if len(episodes) > ROLLOUTS_MEAN
         ]
         rewards = np.mean(rewards) if rewards else float('+inf')
-        # threshold = self.model.env.get_attr('best_matchs')[0]
-        if rewards < REWARDS_THRESHOLD and self.n_rollouts > ROLLOUTS_MEAN:
+        if rewards >= REWARDS_THRESHOLD and self.n_rollouts > ROLLOUTS_MEAN:
             self.has_won = True
             return False  # Stop the training!
 
