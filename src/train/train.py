@@ -49,7 +49,22 @@ class TrainEternal:
             # sync_tensorboard = True,  # Auto-upload the tensorboard metrics
         ) as run:
             # Get wandb config => sweeps can change this config
-            self.__dict__ |= wandb.config
+            config = {
+                k: v
+                for k, v in wandb.config.items()
+                if '.' not in k
+            }
+            for k, v in wandb.config.items():
+                if '.' not in k:
+                    continue
+
+                k1, k2 = k.split('.')
+                if k1 in config:
+                    config[k1][k2] = v
+                else:
+                    config[k1] = {k2: v}
+
+            self.__dict__ |= config
 
             run_id = run.id
 
