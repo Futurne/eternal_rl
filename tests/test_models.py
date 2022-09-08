@@ -22,7 +22,7 @@ def test_cnn_extractor():
         n_channels = 10,
         n_layers = 2,
     )
-    env = EternityEnv('instances/eternity_A.txt', 0, True)
+    env = EternityEnv('instances/eternity_A.txt', manual_orient=True)
 
     obs = torch.FloatTensor(env.render())
     obs = torch.unsqueeze(obs, dim=0)
@@ -49,7 +49,7 @@ def test_transformer_extractor():
 
 
 def test_features_extractor_model():
-    env = EternityEnv('instances/eternity_A.txt', 0, False)
+    env = EternityEnv('instances/eternity_A.txt', manual_orient=False)
     hidden_size = 10
     batch_size = 64
     n_tiles = env.action_space.nvec[0]
@@ -78,7 +78,7 @@ def test_features_extractor_model():
 
 
 def test_pointer_actor_critic():
-    env = EternityEnv('instances/eternity_A.txt', 0, True)
+    env = EternityEnv('instances/eternity_A.txt', manual_orient=True)
     hidden_size = 10
     batch_size = 64
     n_tiles = env.action_space.nvec[0]
@@ -129,7 +129,7 @@ def test_pointer_actor_critic():
     assert values.shape == torch.Size([batch_size, 1])
     assert log_prob.shape == torch.Size([batch_size])
 
-    env = EternityEnv('instances/eternity_A.txt', 0, False)
+    env = EternityEnv('instances/eternity_A.txt', manual_orient=False)
 
     model = PointerActorCritic(
         env.observation_space,

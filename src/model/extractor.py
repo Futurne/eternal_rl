@@ -12,6 +12,41 @@ import torch
 import torch.nn as nn
 
 
+class TileIdEncoding(nn.Module):
+    """From https://pytorch.org/tutorials/beginner/transformer_tutorial.html.
+    """
+    def __init__(
+            self,
+            hidden_size: int,
+            dropout: float = 0.1,
+            max_classes: int = 24,
+    ):
+        super().__init__()
+        self.dropout = nn.Dropout(p=dropout)
+
+        position = torch.arange(max_classes).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, hidden_size, 2) * (-math.log(10000.0) / hidden_size))
+        pe = torch.zeros(max_classes, hidden_size)
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x: torch.LongTensor) -> torch.FloatTensor:
+        """
+        Input
+        -----
+            x: Tiles with their value as a long ID.
+                Shape of [batch_size, 4, map_size, map_size].
+
+        Output
+        ------
+            x: Tiles encoding depending on their ID.
+                Shape of [batch_size, 4, map_size, map_size, hidden_size].
+        """
+        x = self.pe[x]
+        return self.dropout(x)
+
+
 class CNNFeaturesExtractor(nn.Module):
     def __init__(
             self,
@@ -19,12 +54,13 @@ class CNNFeaturesExtractor(nn.Module):
             n_channels: int,
             n_layers: int,
             max_classes: int = 23,
+            dropout: float = 0.1,
         ):
         super().__init__()
         n_sides = observation_space.shape[0]
 
         self.embed_classes = nn.Sequential(
-            nn.Embedding(max_classes, n_channels),
+            TileIdEncoding(n_channels, dropout, max_classes),
             Rearrange('b r s1 s2 c -> b s1 s2 (c r)'),  # Concat rolls and class embeddings
             nn.Linear(n_sides * n_channels, n_channels),  # Reduce dims
             nn.LayerNorm(n_channels),
