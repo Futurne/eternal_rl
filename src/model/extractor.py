@@ -18,7 +18,7 @@ class CNNFeaturesExtractor(nn.Module):
             observation_space: gym.spaces.Box,
             n_channels: int,
             n_layers: int,
-            max_classes: int = 20,
+            max_classes: int = 23,
         ):
         super().__init__()
         n_sides = observation_space.shape[0]
