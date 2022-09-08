@@ -2,16 +2,16 @@
 default_conf: configs/default_config.yaml
 
 # Instance params
-instance_path: instances/eternity_A.txt
+instance_path: instances/eternity_complet.txt
 reward_type: 'delta'
 reward_penalty: 0.0
 
 # Training parameters
-group: Instance A
+group: Instance Final
 # group: Sweep - instance A - Net arch
 batch_size: 256
 lr: 3.0e-4
-total_timesteps: 1.0e6  # Total steps for training
+total_timesteps: 1.0e7  # Total steps for training
 gamma: 0.7
 
 # Model parameters

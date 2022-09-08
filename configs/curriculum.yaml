@@ -8,17 +8,18 @@ reward_penalty: 0.00
 curriculum_learning: True
 
 # Training parameters
-group: Curriculum - 1
+group: Curriculum - 2
 batch_size: 256
 lr: 3.0e-4
 total_timesteps: 1.0e7  # Total steps for training each env
+gamma: 0.7
 
 # Model parameters
 load_pretrain: # Keep empty for no pretraining
 net_arch:
-  hidden_size: 30
-  cnn_layers: 2
+  hidden_size: 100
+  cnn_layers: 1
   n_heads: 5
-  ff_size: 100
+  ff_size: 200
   dropout: 0.1
   n_layers: 5
