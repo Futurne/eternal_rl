@@ -62,7 +62,7 @@ class CNNFeaturesExtractor(nn.Module):
         n_sides = observation_space.shape[0]
 
         self.embed_classes = nn.Sequential(
-            TileIdEncoding(n_channels, dropout, max_classes),  # Encode tiles based on their class ID
+            TileIdEncoding(n_channels, dropout, max_classes, const_term_encoding),  # Encode tiles based on their class ID
             Rearrange('b r s1 s2 c -> b s1 s2 (c r)'),  # Concat rolls and class embeddings
             nn.Linear(n_sides * n_channels, n_channels),  # Reduce dims
             nn.LayerNorm(n_channels),

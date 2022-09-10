@@ -253,4 +253,3 @@ class PointerActorCritic(ActorCriticPolicy):
                 torch.load(os.path.join(path, 'roll.pt'))
             )
 
-

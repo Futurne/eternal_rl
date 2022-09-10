@@ -9,6 +9,7 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import set_random_seed
 
 from src.train.callback import EternalCallback
+from src.train.utils import flat_to_nested_config, merge_config_dicts
 from src.environment.environment import EternityEnv, next_instance
 from src.model.actorcritic import PointerActorCritic
 
@@ -48,26 +49,13 @@ class TrainEternal:
             group = self.group,
             # sync_tensorboard = True,  # Auto-upload the tensorboard metrics
         ) as run:
-            # Get wandb config => sweeps can change this config
-            config = {
-                k: v
-                for k, v in wandb.config.items()
-                if '.' not in k
-            }
-            for k, v in wandb.config.items():
-                if '.' not in k:
-                    continue
-
-                k1, k2 = k.split('.')
-                if k1 in config:
-                    config[k1][k2] = v
-                else:
-                    config[k1] = {k2: v}
-
-            self.__dict__ |= config
-
             run_id = run.id
 
+            # Get wandb config => sweeps can change this config
+            config = flat_to_nested_config(wandb.config)
+            self.__dict__ = merge_config_dicts(self.__dict__, config)
+
+            # For the first training, we need to set the tensor log dir
             if not self.tensor_log_dir:
                 self.tensor_log_dir = f'runs/{run_id}'
                 wandb.tensorboard.patch(root_logdir=self.tensor_log_dir)
