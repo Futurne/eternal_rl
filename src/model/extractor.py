@@ -20,12 +20,13 @@ class TileIdEncoding(nn.Module):
             hidden_size: int,
             dropout: float = 0.1,
             max_classes: int = 24,
+            const_term: float = 10000.0,
     ):
         super().__init__()
         self.dropout = nn.Dropout(p=dropout)
 
         position = torch.arange(max_classes).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, hidden_size, 2) * (-math.log(10000.0) / hidden_size))
+        div_term = torch.exp(torch.arange(0, hidden_size, 2) * (-math.log(const_term) / hidden_size))
         pe = torch.zeros(max_classes, hidden_size)
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
@@ -55,12 +56,13 @@ class CNNFeaturesExtractor(nn.Module):
             n_layers: int,
             max_classes: int = 23,
             dropout: float = 0.1,
+            const_term_encoding: float = 10000.0,
         ):
         super().__init__()
         n_sides = observation_space.shape[0]
 
         self.embed_classes = nn.Sequential(
-            TileIdEncoding(n_channels, dropout, max_classes),
+            TileIdEncoding(n_channels, dropout, max_classes),  # Encode tiles based on their class ID
             Rearrange('b r s1 s2 c -> b s1 s2 (c r)'),  # Concat rolls and class embeddings
             nn.Linear(n_sides * n_channels, n_channels),  # Reduce dims
             nn.LayerNorm(n_channels),
@@ -135,10 +137,6 @@ class TransformerFeaturesExtractor(nn.Module):
             dropout = 0,  
             batch_first = True,
         )
-        self.rotate_token = nn.Sequential(
-            nn.Linear(hidden_size, 4),
-            nn.Softmax(dim=2),
-        )
         self.decoder_toks = nn.Parameter(torch.randn(2, hidden_size))
 
     def forward(
@@ -186,6 +184,7 @@ class FeaturesExtractorModel(nn.Module):
             ff_size: int,
             dropout: float,
             n_layers: int,
+            const_term_encoding: float = 10000.0,
     ):
         super().__init__()
 
@@ -193,6 +192,8 @@ class FeaturesExtractorModel(nn.Module):
             observation_space,
             hidden_size,
             cnn_layers,
+            dropout=dropout,
+            const_term_encoding=const_term_encoding,
         )
 
         self.encoder = TransformerFeaturesExtractor(

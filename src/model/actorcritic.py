@@ -45,6 +45,7 @@ class PointerActorCritic(ActorCriticPolicy):
             'ff_size': 20,
             'dropout': 0.1,
             'n_layers': 3,
+            'const_term_encoding': 10000.0,
         }
         if net_arch:
             self.net_arch |= net_arch
@@ -59,6 +60,7 @@ class PointerActorCritic(ActorCriticPolicy):
                 'ff_size',
                 'dropout',
                 'n_layers',
+                'const_term_encoding',
             ]
         )
 
@@ -80,6 +82,7 @@ class PointerActorCritic(ActorCriticPolicy):
             self.net_arch['ff_size'],
             self.net_arch['dropout'],
             self.net_arch['n_layers'],
+            self.net_arch['const_term_encoding'],
         )
 
     def _build(self, lr_schedule: Schedule):
