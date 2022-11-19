@@ -1,0 +1,15 @@
+program: main.py
+command:
+  - ${env}
+  - ${interpreter}
+  - ${program}
+  - "configs/trivial_env.yaml"
+  - ${args}
+method: bayes
+metric:
+  name: PPO_1/rollout/ep_rew_mean
+  goal: maximize
+
+parameters:
+  net_arch.const_term_encoding:
+    values: [1.0, 10.0, 100.0, 1000.0, 100000.0]

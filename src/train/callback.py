@@ -11,7 +11,7 @@ from wandb.integration.sb3 import WandbCallback
 
 
 ROLLOUTS_MEAN = 10
-REWARDS_THRESHOLD = 0.90
+REWARDS_THRESHOLD = 0.99
 
 
 class EternalCallback(WandbCallback):

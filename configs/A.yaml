@@ -5,14 +5,16 @@ default_conf: configs/default_config.yaml
 instance_path: instances/eternity_A.txt
 reward_type: 'delta'
 reward_penalty: 0.0
+manual_orient: True
 
 # Training parameters
-# group: Instance A
-group: Sweep - instance A - const term encoding
+group: Instance A
+# group: Sweep - instance A - const term encoding
 batch_size: 256
 lr: 3.0e-4
 total_timesteps: 1.0e6  # Total steps for training
 gamma: 0.7
+gae_lambda: 0.6 
 
 # Model parameters
 load_pretrain: # Keep empty for no pretraining
@@ -23,4 +25,4 @@ net_arch:
   ff_size: 200
   dropout: 0.1
   n_layers: 5
-  const_term_encoding: 1.0
+  const_term_encoding: 10000.0

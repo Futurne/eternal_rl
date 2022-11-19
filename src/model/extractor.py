@@ -45,6 +45,7 @@ class TileIdEncoding(nn.Module):
                 Shape of [batch_size, 4, map_size, map_size, hidden_size].
         """
         x = self.pe[x]
+        x = torch.zeros_like(x, device=x.device)
         return self.dropout(x)
 
 

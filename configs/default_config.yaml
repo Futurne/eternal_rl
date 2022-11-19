@@ -5,7 +5,7 @@
 # Not all parameters are defined here!
 
 # Instance params
-manual_orient: false
+manual_orient: False
 curriculum_learning: False
 
 # Training parameters
